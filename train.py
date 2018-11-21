@@ -91,8 +91,8 @@ def train(input_tensor, input_lengths, target_tensor, target_lengths,
     return loss.item() / target_lengths
 
 
-def trainIters(train_loader, encoder, decoder, num_epochs = 100, 
-               learning_rate=0.01,teacher_forcing_ratio = 0):
+def trainIters(train_loader, encoder, decoder, num_epochs, 
+               learning_rate,teacher_forcing_ratio, attention):
     start = time.time()
     plot_losses = []
     encoder_optimizer = optim.SGD(encoder.parameters(), lr=learning_rate)
@@ -237,7 +237,7 @@ if __name__ == "__main__":
         learning_rate=0.01,
         num_epochs=100,
         batch_size = 10, 
-        attention = False
+        attention = True
     )
     start_train(transtype,paras)
 
