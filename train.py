@@ -12,6 +12,7 @@ from Encoder import EncoderRNN
 from Decoder import DecoderRNN, DecoderAtten
 from config import *
 import random
+from evalution import evaluate
 
 
 ####################Define Global Variable#########################
@@ -26,7 +27,9 @@ print(device)
 def train(input_tensor, input_lengths, target_tensor, target_lengths,
           encoder, decoder, encoder_optimizer, decoder_optimizer, criterion, 
           teacher_forcing_ratio, attention):
-    
+    '''
+    finish train for a batch
+    '''
     batch_size = input_tensor.size()[0]
     encoder_hidden = encoder.initHidden(batch_size)
 
@@ -38,7 +41,7 @@ def train(input_tensor, input_lengths, target_tensor, target_lengths,
     encoder_outputs, encoder_hidden = encoder(input_tensor, encoder_hidden, input_lengths)
     
     if attention:
-        decoder.readEncoderOutput(encoder_outputs)
+        decoder.readEncoderOutput(encoder_outputs, input_lengths) 
         
     decoder_input = torch.tensor([[SOS_token]*batch_size], device=device).transpose(0,1)
     decoder_hidden = encoder_hidden
@@ -83,15 +86,14 @@ def train(input_tensor, input_lengths, target_tensor, target_lengths,
             #(target_lengths > decoding_token_index)*(decoder_input.squeeze().numpy() != EOS_token)
             sent_not_end_index = list(np.where(end_or_not)[0])
             
-
     loss.backward()
     encoder_optimizer.step()
     decoder_optimizer.step()
 
-    return loss.item() / target_lengths
+    return loss.item() / target_lengths.mean()
 
 
-def trainIters(train_loader, encoder, decoder, num_epochs, 
+def trainIters(train_loader, val_loader, encoder, decoder, num_epochs, 
                learning_rate,teacher_forcing_ratio, attention):
     start = time.time()
     plot_losses = []
@@ -101,7 +103,6 @@ def trainIters(train_loader, encoder, decoder, num_epochs,
     criterion = nn.NLLLoss()
     n_iter = 0
     
-    
     for epoch in range(num_epochs): 
         plot_losses = []
         for input_tensor, input_lengths, target_tensor, target_lengths in train_loader:
@@ -110,22 +111,10 @@ def trainIters(train_loader, encoder, decoder, num_epochs,
                          encoder, decoder, encoder_optimizer, decoder_optimizer, 
                          criterion, teacher_forcing_ratio, attention)
             plot_losses.append(loss)
-
-    #         print_loss_total += loss
-    #         plot_loss_total += loss
-
-    #         if n_iter % print_every == 0:
-    #             print_loss_avg = print_loss_total / print_every
-    #             print_loss_total = 0
-    #             print('(%d %d%%) %.4f' % (n_iter, n_iter / n_iter * 100, print_loss_avg))
-
-    #         if n_iter % plot_every == 0:
-    #             plot_loss_avg = plot_loss_total / plot_every
-    #             plot_losses.append(plot_loss_avg)
-    #             plot_loss_total = 0
-
-    showPlot(plot_losses)
-
+        val_bleu, val_loss = evaluate(val_loader, encoder, decoder, criterion, tgt_max_length)
+        print('val_bleu: {}, val_loss: {}'.format(val_bleu, val_loss))
+    return None
+    
 
 def start_train(transtype, paras):
     teacher_forcing_ratio = paras['teacher_forcing_ratio']
@@ -175,13 +164,25 @@ def start_train(transtype, paras):
         with open(train_zh_add) as f:
             for line in f:
                 train_zh.append(preposs_toekn(line[:-1].strip().split(' ')))
-                
+        
+        val_en = []
+        with open(val_en_add) as f:
+            for line in f:
+                val_en.append(preposs_toekn(line[:-1].strip().split(' ')))
+
+        val_zh = []
+        with open(val_zh_add) as f:
+            for line in f:
+                val_zh.append(preposs_toekn(line[:-1].strip().split(' ')))
+
         enLang = Lang('en')
         enLang.load_embedding('/scratch/tw1682/embedding/wiki.en.vec',src_vocab_size)
         zhLang = Lang('zh')
         zhLang.load_embedding('/scratch/tw1682/embedding/wiki.zh.vec',tgt_vocab_size)
         train_input_index = text2index(train_zh,zhLang.word2index)
         train_output_index = text2index(train_en,enLang.word2index)
+        val_input_index = text2index(val_zh,zhLang.word2index)
+        val_output_index = text2index(val_en,enLang.word2index)
     
     else:
         print('translation type error, we support zh2en and en2zh')
@@ -193,11 +194,11 @@ def start_train(transtype, paras):
                                                collate_fn=vocab_collate_func,
                                                shuffle=False)
 
-    # val_dataset = VocabDataset(val_data)
-    # val_loader = torch.utils.data.DataLoader(dataset=val_dataset,
-    #                                            batch_size=BATCH_SIZE,
-    #                                            collate_fn=vocab_collate_func,
-    #                                            shuffle=True)
+    val_dataset = VocabDataset(train_input_index,train_output_index)
+    val_loader = torch.utils.data.DataLoader(dataset=val_dataset,
+                                            batch_size=1,
+                                            collate_fn=vocab_collate_func,
+                                            shuffle=False)
 
     # test_dataset = VocabDataset(test_data)
     # test_loader = torch.utils.data.DataLoader(dataset=test_dataset,
@@ -224,7 +225,7 @@ def start_train(transtype, paras):
         else:
             print('You should not see this')
     
-    trainIters(train_loader, encoder, decoder, num_epochs, learning_rate, teacher_forcing_ratio, attention)
+    trainIters(train_loader, val_loader, encoder, decoder, num_epochs, learning_rate, teacher_forcing_ratio, attention)
     
 
 if __name__ == "__main__":
@@ -239,7 +240,7 @@ if __name__ == "__main__":
         batch_size = 10, 
         attention = True
     )
-    start_train(transtype,paras)
+    start_train(transtype, paras)
 
 
 

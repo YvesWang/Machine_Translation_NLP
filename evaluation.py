@@ -2,8 +2,6 @@
 import torch
 from nltk.translate.bleu_score import corpus_bleu
 
-tgt_max_length = 50 
-
 def index2token():
     return None
 
