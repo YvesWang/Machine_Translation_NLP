@@ -27,27 +27,30 @@ class DecoderAtten(nn.Module):
         self.hidden_size = hidden_size
         self.embedding = nn.Embedding(vocab_size, hidden_size)
         self.gru = nn.GRU(hidden_size, hidden_size, batch_first=True)
-        self.atten = AttentionLayer(hidden_size,atten_type = 'dot_prod')
+        self.atten = AttentionLayer(hidden_size,atten_type = 'dot_prod', true_len = true_len)
         
         self.linear = nn.Linear(hidden_size * 2, hidden_size)
         self.out = nn.Linear(hidden_size, vocab_size)
         self.logsoftmax = nn.LogSoftmax(dim=1)
         self.encoder_output = None
+        self.true_len = None
 
     def forward(self, src_input, hidden):
         output = self.embedding(src_input)
         #print(output.size())
         output, hidden = self.gru(output, hidden)
         ### add attention
-        atten_output, atten_weight = self.atten(output, self.encoder_output)
+        atten_output, atten_weight = self.atten(output, self.encoder_output, self.true_len)
         out1 = torch.cat((output,atten_output),-1)
         out2 = self.linear(out1[:,0,:])
         logits = self.out(out2)
         output = self.logsoftmax(logits)
         return output, hidden, atten_weight
     
-    def readEncoderOutput(self,encoder_output):
+    def readEncoderOutput(self,encoder_output, true_len):
         self.encoder_output = encoder_output
+        self.true_len = true_len
+        
 
 
 class AttentionLayer(nn.Module):
@@ -62,13 +65,16 @@ class AttentionLayer(nn.Module):
         #elif atten_type == 
         #self.atten = nn.Linear(key_size, 1)
 
-    def forward(self, query, memory_bank):
+    def forward(self, query, memory_bank, true_len):
         batch, seq_len, hidden_size = memory_bank.size()
         #query_len = query.size(1)
         
         scores = self.atten_score(query, memory_bank)
-        scores_normalized = F.softmax(scores, dim=2)
         
+        mask_matrix = sequence_mask(true_len).unsqueeze(1)
+        scores.masked_fill_(1-mask_matrix, float('-inf'))
+        
+        scores_normalized = F.softmax(scores, dim=2)
         context = torch.bmm(scores_normalized, memory_bank)
         
         return context, scores
@@ -86,7 +92,9 @@ class AttentionLayer(nn.Module):
             out = torch.bmm(query, memory_bank.transpose(1, 2))
         else:
             print('mode out of bound')
-
         return out
-    
-    
+
+def sequence_mask(lengths):
+    batch_size = lengths.numel()
+    max_len = lengths.max()
+    return (torch.arange(0, max_len).type_as(lengths).repeat(batch_size,1).lt(lengths.unsqueeze(1)))
