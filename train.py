@@ -79,8 +79,8 @@ def train(input_tensor, input_lengths, target_tensor, target_lengths,
                               target_tensor[:,decoding_token_index].index_select(
                                   0,sent_not_end_index))
             decoding_token_index += 1
-            end_or_not = (target_lengths > decoding_token_index)*(
-                decoder_input.squeeze().numpy() != EOS_token)
+            end_or_not = target_lengths > decoding_token_index
+            #(target_lengths > decoding_token_index)*(decoder_input.squeeze().numpy() != EOS_token)
             sent_not_end_index = list(np.where(end_or_not)[0])
             
 
