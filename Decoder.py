@@ -3,16 +3,20 @@ import torch
 import torch.nn.functional as F
 
 class DecoderRNN(nn.Module):
-    def __init__(self, hidden_size, vocab_size, embedding_weight, device):
+    def __init__(self, emb_size, hidden_size, vocab_size, num_encoder_direction,  embedding_weight, device):
         super(DecoderRNN, self).__init__()
+        hidden_size = hidden_size * num_encoder_direction
         self.hidden_size = hidden_size
-        self.embedding = nn.Embedding(vocab_size, hidden_size)
-        self.gru = nn.GRU(hidden_size, hidden_size, batch_first=True)
+        if embedding_weight is not None:
+            self.embedding = nn.Embedding.from_pretrained(embedding_weight, freeze = False)
+        else:
+            self.embedding = nn.Embedding(vocab_size, hidden_size)
+        self.gru = nn.GRU(emb_size, hidden_size, batch_first=True)
         self.out = nn.Linear(hidden_size, vocab_size)
         self.device = device
         self.softmax = nn.LogSoftmax(dim=1)
 
-    def forward(self, src_input, hidden):
+    def forward(self, src_input, hidden, encoder_outputs):
         output = self.embedding(src_input)
         #print(output.size())
         output, hidden = self.gru(output, hidden)
@@ -22,37 +26,33 @@ class DecoderRNN(nn.Module):
     
 
 class DecoderAtten(nn.Module):
-    def __init__(self, hidden_size, vocab_size, embedding_weight, device):
+    def __init__(self, emb_size, hidden_size, vocab_size, num_encoder_direction,  embedding_weight, device):
         super(DecoderAtten, self).__init__()
+        hidden_size = hidden_size * num_encoder_direction
         self.hidden_size = hidden_size
-        self.embedding = nn.Embedding(vocab_size, hidden_size)
-        self.gru = nn.GRU(hidden_size, hidden_size, batch_first=True)
-        self.atten = AttentionLayer(hidden_size,atten_type = 'dot_prod', true_len = true_len)
+        if embedding_weight is not None:
+            self.embedding = nn.Embedding.from_pretrained(embedding_weight, freeze = False)
+        else:
+            self.embedding = nn.Embedding(vocab_size, emb_size)
+        self.gru = nn.GRU(emb_size, hidden_size, batch_first=True)
+        self.atten = AttentionLayer(hidden_size,atten_type = 'dot_prod')
         
         self.linear = nn.Linear(hidden_size * 2, hidden_size)
         self.out = nn.Linear(hidden_size, vocab_size)
         self.logsoftmax = nn.LogSoftmax(dim=1)
-        self.encoder_output = None
-        self.true_len = None
 
-    def forward(self, src_input, hidden):
+    def forward(self, src_input, hidden, true_len, encoder_outputs):
         output = self.embedding(src_input)
         #print(output.size())
         output, hidden = self.gru(output, hidden)
         ### add attention
-        atten_output, atten_weight = self.atten(output, self.encoder_output, self.true_len)
+        atten_output, atten_weight = self.atten(output, encoder_outputs, true_len)
         out1 = torch.cat((output,atten_output),-1)
         out2 = self.linear(out1[:,0,:])
         logits = self.out(out2)
         output = self.logsoftmax(logits)
         return output, hidden, atten_weight
     
-    def readEncoderOutput(self,encoder_output, true_len):
-        self.encoder_output = encoder_output
-        self.true_len = true_len
-        
-
-
 class AttentionLayer(nn.Module):
     def __init__(self, hidden_size, atten_type):
         super(AttentionLayer, self).__init__()
@@ -81,8 +81,8 @@ class AttentionLayer(nn.Module):
     
     def atten_score(self, query, memory_bank):
         """
-        query is: b t_q n
-        memory_bank is b t_k n
+        query is: batch * target length * hidden size
+        memory_bank is batch * sequence length * hidden size
         return batch * target length * sequence length
         """
 

@@ -36,7 +36,7 @@ def read_embedding(fasttest_home = './wiki-news-300d-1M.vec', words_to_load = 50
             idx2words_ft[i] = s[0]
             ordered_words_ft.append(s[0])
     
-    return words_ft,idx2words_ft,loaded_embeddings_ft
+    return words_ft,idx2words_ft,loaded_embeddings_ft.astype(np.float32)
 
 class Lang:
     def __init__(self, name):

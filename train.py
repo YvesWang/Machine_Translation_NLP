@@ -12,7 +12,7 @@ from Encoder import EncoderRNN
 from Decoder import DecoderRNN, DecoderAtten
 from config import *
 import random
-from evalution import evaluate
+from evaluation import evaluate
 
 
 ####################Define Global Variable#########################
@@ -39,10 +39,6 @@ def train(input_tensor, input_lengths, target_tensor, target_lengths,
     loss = 0
 
     encoder_outputs, encoder_hidden = encoder(input_tensor, encoder_hidden, input_lengths)
-    
-    if attention:
-        decoder.readEncoderOutput(encoder_outputs, input_lengths) 
-        
     decoder_input = torch.tensor([[SOS_token]*batch_size], device=device).transpose(0,1)
     decoder_hidden = encoder_hidden
     
@@ -55,7 +51,7 @@ def train(input_tensor, input_lengths, target_tensor, target_lengths,
         decoding_token_index = 0
         while len(sent_not_end_index) > 0:
             decoder_output, decoder_hidden, decoder_attention = decoder(
-                decoder_input, decoder_hidden, encoder_outputs)
+                decoder_input, decoder_hidden, input_lengths, encoder_outputs)
             sent_not_end_index = torch.LongTensor(sent_not_end_index).to(device)
             loss += criterion(decoder_output.index_select(0,sent_not_end_index), 
                               target_tensor[:,decoding_token_index].index_select(
@@ -73,7 +69,7 @@ def train(input_tensor, input_lengths, target_tensor, target_lengths,
         decoding_token_index = 0
         while len(sent_not_end_index) > 0:
             decoder_output, decoder_hidden, decoder_attention = decoder(
-                decoder_input, decoder_hidden)
+                decoder_input, decoder_hidden,input_lengths, encoder_outputs)
             topv, topi = decoder_output.topk(1)
             decoder_input = topi.detach()  # detach from history as input
             #print(type(sent_not_end_index[0]))
@@ -94,25 +90,29 @@ def train(input_tensor, input_lengths, target_tensor, target_lengths,
 
 
 def trainIters(train_loader, val_loader, encoder, decoder, num_epochs, 
-               learning_rate,teacher_forcing_ratio, attention):
+               learning_rate,teacher_forcing_ratio, attention, srcLang, tgtLang):
     start = time.time()
     plot_losses = []
     encoder_optimizer = optim.SGD(encoder.parameters(), lr=learning_rate)
     decoder_optimizer = optim.SGD(decoder.parameters(), lr=learning_rate)
 
     criterion = nn.NLLLoss()
-    n_iter = 0
-    
     for epoch in range(num_epochs): 
+        n_iter = 0
         plot_losses = []
         for input_tensor, input_lengths, target_tensor, target_lengths in train_loader:
             n_iter += 1
+            #print('start_step: ', n_iter)
             loss = train(input_tensor, input_lengths, target_tensor, target_lengths, 
                          encoder, decoder, encoder_optimizer, decoder_optimizer, 
                          criterion, teacher_forcing_ratio, attention)
             plot_losses.append(loss)
-        val_bleu, val_loss = evaluate(val_loader, encoder, decoder, criterion, tgt_max_length)
-        print('val_bleu: {}, val_loss: {}'.format(val_bleu, val_loss))
+            #print('*********',loss)
+            if n_iter%200 == 0:
+                val_bleu, val_loss = evaluate(val_loader, encoder, decoder, criterion, tgt_max_length,srcLang.index2word ,tgtLang.index2word)
+                print('epoch: [{}], step: [{}/{}], val_bleu: {}, val_loss: {}'.format(epoch, n_iter, len(train_loader), val_bleu, val_loss))
+        val_bleu, val_loss = evaluate(val_loader, encoder, decoder, criterion, tgt_max_length,srcLang.index2word ,tgtLang.index2word)
+        print('epoch: [{}], val_bleu: {}, val_loss: {}'.format(epoch, val_bleu, val_loss))
     return None
     
 
@@ -194,7 +194,7 @@ def start_train(transtype, paras):
                                                collate_fn=vocab_collate_func,
                                                shuffle=False)
 
-    val_dataset = VocabDataset(train_input_index,train_output_index)
+    val_dataset = VocabDataset(val_input_index,val_output_index)
     val_loader = torch.utils.data.DataLoader(dataset=val_dataset,
                                             batch_size=1,
                                             collate_fn=vocab_collate_func,
@@ -205,27 +205,31 @@ def start_train(transtype, paras):
     #                                            batch_size=BATCH_SIZE,
     #                                            collate_fn=vocab_collate_func,
     #                                            shuffle=False)
+
     
+    if transtype == 'en2zh':
+        srcLang = enLang
+        tgtLang = zhLang
+    elif transtype == 'zh2en':
+        srcLang = zhLang
+        tgtLang = enLang
+    else:
+        print('transtype value out of bound')
+
+    embedding_src_weight = torch.from_numpy(srcLang.embedding_matrix).to(device)
+    embedding_tgt_weight = torch.from_numpy(tgtLang.embedding_matrix).to(device)
+    print(embedding_src_weight.size(),embedding_tgt_weight.size())
     if attention:
-        if transtype == 'en2zh':
-            encoder = EncoderRNN(src_vocab_size, embed_size, hidden_size,vocab_size, embed_size, hidden_sizenum_direction = 1,embedding_weight = enLang.embedding_matrix, device = device)
-            decoder = DecoderAtten(hidden_size, tgt_vocab_size, embedding_weight = zhLang.embedding_matrix, device = device)
-        elif transtype == 'zh2en':
-            encoder = EncoderRNN(src_vocab_size, emb_size,hidden_size,num_direction = 1,embedding_weight = zhLang.embedding_matrix, device = device)
-            decoder = DecoderAtten(hidden_size, tgt_vocab_size, embedding_weight = enLang.embedding_matrix, device = device)
-        else:
-            print('You should not see this')
+        encoder = EncoderRNN(src_vocab_size, emb_size,hidden_size,num_direction, embedding_weight = embedding_src_weight, device = device)
+        decoder = DecoderAtten(emb_size, hidden_size, tgt_vocab_size, num_direction, embedding_weight = embedding_tgt_weight, device = device)
     else:      
-        if transtype == 'en2zh':
-            encoder = EncoderRNN(src_vocab_size, embed_size, hidden_size,vocab_size, embed_size, hidden_sizenum_direction = 1,embedding_weight = enLang.embedding_matrix, device = device)
-            decoder = DecoderRNN(hidden_size, tgt_vocab_size, embedding_weight = zhLang.embedding_matrix, device = device)
-        elif transtype == 'zh2en':
-            encoder = EncoderRNN(src_vocab_size, emb_size,hidden_size,num_direction = 1,embedding_weight = zhLang.embedding_matrix, device = device)
-            decoder = DecoderRNN(hidden_size, tgt_vocab_size, embedding_weight = enLang.embedding_matrix, device = device)
-        else:
-            print('You should not see this')
+        encoder = EncoderRNN(src_vocab_size, emb_size,hidden_size,num_direction, embedding_weight = embedding_src_weight, device = device)
+        decoder = DecoderRNN(emb_size, hidden_size, tgt_vocab_size, num_direction, embedding_weight = embedding_tgt_weight, device = device)
     
-    trainIters(train_loader, val_loader, encoder, decoder, num_epochs, learning_rate, teacher_forcing_ratio, attention)
+    encoder, decoder = encoder.to(device), decoder.to(device)
+    print(encoder)
+    print(decoder)
+    trainIters(train_loader, val_loader, encoder, decoder, num_epochs, learning_rate, teacher_forcing_ratio, attention, srcLang, tgtLang)
     
 
 if __name__ == "__main__":
@@ -234,10 +238,10 @@ if __name__ == "__main__":
         teacher_forcing_ratio = 0,
         emb_size = 300,
         hidden_size = 100,
-        num_direction = 1,
+        num_direction = 2,
         learning_rate=0.01,
         num_epochs=100,
-        batch_size = 10, 
+        batch_size = 100, 
         attention = True
     )
     start_train(transtype, paras)
