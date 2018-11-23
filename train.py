@@ -207,7 +207,7 @@ if __name__ == "__main__":
         learning_rate=0.01,
         num_epochs=10,
         batch_size = 20, 
-        attention = False
+        attention = True 
     )
     start_train(transtype, paras)
 

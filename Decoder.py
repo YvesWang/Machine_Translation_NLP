@@ -48,7 +48,8 @@ class DecoderAtten(nn.Module):
         ### add attention
         atten_output, atten_weight = self.atten(output, encoder_outputs, true_len)
         out1 = torch.cat((output,atten_output),-1)
-        out2 = self.linear(out1[:,0,:])
+        out2 = self.linear(out1.squeeze(1))
+        out2 = F.tanh(out2)
         logits = self.out(out2)
         output = self.logsoftmax(logits)
         return output, hidden, atten_weight
@@ -66,8 +67,8 @@ class AttentionLayer(nn.Module):
         #self.atten = nn.Linear(key_size, 1)
 
     def forward(self, query, memory_bank, true_len):
-        batch, seq_len, hidden_size = memory_bank.size()
-        #query_len = query.size(1)
+        batch_size, seq_len, hidden_size = memory_bank.size()
+        query_len = query.size(1)
         #print('11111111111111111111')
         scores = self.atten_score(query, memory_bank)
         
@@ -76,7 +77,8 @@ class AttentionLayer(nn.Module):
         scores.masked_fill_(1-mask_matrix, float('-inf'))
         
         #print('111111333333333333331111')
-        scores_normalized = F.softmax(scores, dim=2)
+        #scores_normalized = F.softmax(scores, dim=2)
+        scores_normalized = F.softmax(scores.view(batch_size * query_len, seq_len), dim=-1).view(batch_size, query_len, seq_len)
         context = torch.bmm(scores_normalized, memory_bank)
         
         #print('1111111444444444444441111')
@@ -89,7 +91,7 @@ class AttentionLayer(nn.Module):
         return batch * target length * sequence length
         """
 
-        batch, seq_len, hidden_size = list(memory_bank.size())
+        batch, seq_len, hidden_size = memory_bank.size()
         #query_len = query.size(1)
         if self.mode == 'dot_prod':
             out = torch.bmm(query, memory_bank.transpose(1, 2))
