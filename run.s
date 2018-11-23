@@ -11,4 +11,4 @@ module purge
 #module load jupyter-kernels/py3.5
 source /home/tw1682/py36/bin/activate
 
-python -u train.py 
+CUDA_LAUNCH_BLOCKING=1 python -u train.py 

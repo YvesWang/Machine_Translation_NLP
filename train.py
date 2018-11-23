@@ -205,9 +205,9 @@ if __name__ == "__main__":
         hidden_size = 100,
         num_direction = 2,
         learning_rate=0.01,
-        num_epochs=100,
-        batch_size = 100, 
-        attention = True
+        num_epochs=10,
+        batch_size = 20, 
+        attention = False
     )
     start_train(transtype, paras)
 

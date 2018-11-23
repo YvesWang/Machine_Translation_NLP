@@ -16,7 +16,7 @@ class DecoderRNN(nn.Module):
         self.device = device
         self.softmax = nn.LogSoftmax(dim=1)
 
-    def forward(self, src_input, hidden, encoder_outputs):
+    def forward(self, src_input, hidden, true_len = None, encoder_outputs = None):
         output = self.embedding(src_input)
         #print(output.size())
         output, hidden = self.gru(output, hidden)
