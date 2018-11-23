@@ -68,15 +68,18 @@ class AttentionLayer(nn.Module):
     def forward(self, query, memory_bank, true_len):
         batch, seq_len, hidden_size = memory_bank.size()
         #query_len = query.size(1)
-        
+        #print('11111111111111111111')
         scores = self.atten_score(query, memory_bank)
         
+        #print('111222222222222211111111')
         mask_matrix = sequence_mask(true_len).unsqueeze(1)
         scores.masked_fill_(1-mask_matrix, float('-inf'))
         
+        #print('111111333333333333331111')
         scores_normalized = F.softmax(scores, dim=2)
         context = torch.bmm(scores_normalized, memory_bank)
         
+        #print('1111111444444444444441111')
         return context, scores
     
     def atten_score(self, query, memory_bank):

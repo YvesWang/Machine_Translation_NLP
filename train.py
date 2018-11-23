@@ -17,8 +17,8 @@ from evaluation import evaluate
 
 ####################Define Global Variable#########################
 
-device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
-print(device)
+#device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+#print(device)
 
 
 ####################Define Global Variable#########################
@@ -41,7 +41,7 @@ def train(input_tensor, input_lengths, target_tensor, target_lengths,
     encoder_outputs, encoder_hidden = encoder(input_tensor, encoder_hidden, input_lengths)
     decoder_input = torch.tensor([[SOS_token]*batch_size], device=device).transpose(0,1)
     decoder_hidden = encoder_hidden
-    
+    #print('encoddddddddddder finishhhhhhhhhhhhhhh')
     use_teacher_forcing = True if random.random() < teacher_forcing_ratio else False
 
     if use_teacher_forcing:
@@ -102,13 +102,13 @@ def trainIters(train_loader, val_loader, encoder, decoder, num_epochs,
         plot_losses = []
         for input_tensor, input_lengths, target_tensor, target_lengths in train_loader:
             n_iter += 1
-            #print('start_step: ', n_iter)
+            print('start_step: ', n_iter)
             loss = train(input_tensor, input_lengths, target_tensor, target_lengths, 
                          encoder, decoder, encoder_optimizer, decoder_optimizer, 
                          criterion, teacher_forcing_ratio, attention)
             plot_losses.append(loss)
-            #print('*********',loss)
-            if n_iter%200 == 0:
+            print('*********',loss)
+            if n_iter%100 == 0:
                 val_bleu, val_loss = evaluate(val_loader, encoder, decoder, criterion, tgt_max_length,srcLang.index2word ,tgtLang.index2word)
                 print('epoch: [{}], step: [{}/{}], val_bleu: {}, val_loss: {}'.format(epoch, n_iter, len(train_loader), val_bleu, val_loss))
         val_bleu, val_loss = evaluate(val_loader, encoder, decoder, criterion, tgt_max_length,srcLang.index2word ,tgtLang.index2word)
@@ -127,65 +127,40 @@ def start_train(transtype, paras):
     attention = paras['attention']
     
     
-    if transtype == 'en2zh':
-        train_en_add = './iwsltzhen/iwslt-zh-en/train.tok.en'
-        train_zh_add = './iwsltzhen/iwslt-zh-en/train.tok.zh'
-        val_en_add = './iwsltzhen/iwslt-zh-en/dev.tok.en'
-        val_zh_add = './iwsltzhen/iwslt-zh-en/dev.tok.zh'
+    train_src_add = address_book['train_src']
+    train_tgt_add = address_book['train_tgt']
+    val_src_add = address_book['val_src']
+    val_tgt_add = address_book['val_tgt']
 
-        train_en = []
-        with open(train_en_add) as f:
-            for line in f:
-                train_en.append(preposs_toekn(line[:-1].strip().split(' ')))
+    train_src = []
+    with open(train_src_add) as f:
+        for line in f:
+            train_src.append(preposs_toekn(line[:-1].strip().split(' ')))
 
-        train_zh = []
-        with open(train_zh_add) as f:
-            for line in f:
-                train_zh.append(preposs_toekn(line[:-1].strip().split(' ')))
-        enLang = Lang('en')
-        enLang.load_embedding('../embedding/wiki.en.vec',src_vocab_size)
-        zhLang = Lang('zh')
-        zhLang.load_embedding('../embedding/wiki.zh.vec',tgt_vocab_size)
-        train_input_index = text2index(train_en,enLang.word2index)
-        train_output_index = text2index(train_zh,zhLang.word2index)
-    
-    elif transtype == 'zh2en':
-        train_en_add = './iwsltzhen/iwslt-zh-en/train.tok.en'
-        train_zh_add = './iwsltzhen/iwslt-zh-en/train.tok.zh'
-        val_en_add = './iwsltzhen/iwslt-zh-en/dev.tok.en'
-        val_zh_add = './iwsltzhen/iwslt-zh-en/dev.tok.zh'
-
-        train_en = []
-        with open(train_en_add) as f:
-            for line in f:
-                train_en.append(preposs_toekn(line[:-1].strip().split(' ')))
-
-        train_zh = []
-        with open(train_zh_add) as f:
-            for line in f:
-                train_zh.append(preposs_toekn(line[:-1].strip().split(' ')))
+    train_tgt = []
+    with open(train_tgt_add) as f:
+        for line in f:
+            train_tgt.append(preposs_toekn(line[:-1].strip().split(' ')))
         
-        val_en = []
-        with open(val_en_add) as f:
-            for line in f:
-                val_en.append(preposs_toekn(line[:-1].strip().split(' ')))
+    val_src = []
+    with open(val_src_add) as f:
+        for line in f:
+            val_src.append(preposs_toekn(line[:-1].strip().split(' ')))
 
-        val_zh = []
-        with open(val_zh_add) as f:
-            for line in f:
-                val_zh.append(preposs_toekn(line[:-1].strip().split(' ')))
+    val_tgt = []
+    with open(val_tgt_add) as f:
+        for line in f:
+            val_tgt.append(preposs_toekn(line[:-1].strip().split(' ')))
 
-        enLang = Lang('en')
-        enLang.load_embedding('/scratch/tw1682/embedding/wiki.en.vec',src_vocab_size)
-        zhLang = Lang('zh')
-        zhLang.load_embedding('/scratch/tw1682/embedding/wiki.zh.vec',tgt_vocab_size)
-        train_input_index = text2index(train_zh,zhLang.word2index)
-        train_output_index = text2index(train_en,enLang.word2index)
-        val_input_index = text2index(val_zh,zhLang.word2index)
-        val_output_index = text2index(val_en,enLang.word2index)
+    srcLang = Lang('src')
+    srcLang.load_embedding(address_book['src_emb'],src_vocab_size)
+    tgtLang = Lang('tgt')
+    tgtLang.load_embedding(address_book['tgt_emb'],tgt_vocab_size)
+    train_input_index = text2index(train_src,srcLang.word2index)
+    train_output_index = text2index(train_tgt,tgtLang.word2index)
+    val_input_index = text2index(val_src,srcLang.word2index)
+    val_output_index = text2index(val_tgt,tgtLang.word2index)
     
-    else:
-        print('translation type error, we support zh2en and en2zh')
     
 
     train_dataset = VocabDataset(train_input_index,train_output_index)
@@ -205,16 +180,6 @@ def start_train(transtype, paras):
     #                                            batch_size=BATCH_SIZE,
     #                                            collate_fn=vocab_collate_func,
     #                                            shuffle=False)
-
-    
-    if transtype == 'en2zh':
-        srcLang = enLang
-        tgtLang = zhLang
-    elif transtype == 'zh2en':
-        srcLang = zhLang
-        tgtLang = enLang
-    else:
-        print('transtype value out of bound')
 
     embedding_src_weight = torch.from_numpy(srcLang.embedding_matrix).to(device)
     embedding_tgt_weight = torch.from_numpy(tgtLang.embedding_matrix).to(device)
