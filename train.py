@@ -143,9 +143,9 @@ def start_train(transtype, paras):
             for line in f:
                 train_zh.append(preposs_toekn(line[:-1].strip().split(' ')))
         enLang = Lang('en')
-        enLang.load_embedding('/scratch/tw1682/embedding/wiki.en.vec',src_vocab_size)
+        enLang.load_embedding('../embedding/wiki.en.vec',src_vocab_size)
         zhLang = Lang('zh')
-        zhLang.load_embedding('/scratch/tw1682/embedding/wiki.zh.vec',tgt_vocab_size)
+        zhLang.load_embedding('../embedding/wiki.zh.vec',tgt_vocab_size)
         train_input_index = text2index(train_en,enLang.word2index)
         train_output_index = text2index(train_zh,zhLang.word2index)
     
