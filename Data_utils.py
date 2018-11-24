@@ -5,6 +5,7 @@ import os.path
 import torch
 from torch.utils.data import Dataset, DataLoader
 from torch.nn.utils.rnn import pad_packed_sequence, pack_padded_sequence
+from config import device
 
 import random
 
@@ -50,11 +51,11 @@ def vocab_collate_func(batch):
     train_length_list = []
     label_length_list = []
     
-    device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+    #device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
     for datum in batch:
-        label_length_list.append(datum[3])
         train_length_list.append(datum[1])
+        label_length_list.append(datum[3])
     
     batch_max_input_length = np.max(train_length_list)
     batch_max_output_length = np.max(label_length_list)
@@ -78,9 +79,9 @@ def vocab_collate_func(batch):
     
     #print(type(np.array(data_list)),type(np.array(label_list)))
     
-    return [torch.from_numpy(np.array(data_list)).to(device), 
+    return [torch.from_numpy(data_list).to(device), 
             torch.LongTensor(train_length_list).to(device), 
-            torch.from_numpy(np.array(label_list)).to(device), 
+            torch.from_numpy(label_list).to(device), 
             torch.LongTensor(label_length_list).to(device)]
 
 

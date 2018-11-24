@@ -1,9 +1,9 @@
 import torch
 
-src_vocab_size = 50000
-tgt_vocab_size = 50000
+src_vocab_size = 10000
+tgt_vocab_size = 10000
 
-tgt_max_length = 50 
+tgt_max_length = 200
 
 PAD_token = 0
 SOS_token = 1
@@ -12,13 +12,13 @@ UNK_token = 3
 
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
-address_book1 = dict(
-    train_src = './iwsltzhen/iwslt-zh-en/train.tok.zh',
-    train_tgt = './iwsltzhen/iwslt-zh-en/train.tok.en',
-    val_src = './iwsltzhen/iwslt-zh-en/dev.tok.zh',
-    val_tgt = './iwsltzhen/iwslt-zh-en/dev.tok.en',
-    src_emb = '../embedding/wiki.zh.vec',
-    tgt_emb = '../embedding/wiki.en.vec'
+address_book = dict(
+    train_src = 'Machine_Translation_NLP/iwsltzhen/iwslt-zh-en/train.tok.zh',
+    train_tgt = 'Machine_Translation_NLP/iwsltzhen/iwslt-zh-en/train.tok.en',
+    val_src = 'Machine_Translation_NLP/iwsltzhen/iwslt-zh-en/dev.tok.zh',
+    val_tgt = 'Machine_Translation_NLP/iwsltzhen/iwslt-zh-en/dev.tok.en',
+    src_emb = 'embedding/wiki.zh.vec',
+    tgt_emb = 'embedding/wiki.en.vec'
 )
 
 address_book1 = dict(
@@ -30,7 +30,7 @@ address_book1 = dict(
     tgt_emb = '../embedding/wiki.en.vec'
 )
 
-address_book = dict(
+address_book1 = dict(
     train_src = '/home/tw1682/Machine_Translation_NLP/iwsltzhen/iwslt-zh-en/train_sortByEn.tok.zh',
     train_tgt = '/home/tw1682/Machine_Translation_NLP/iwsltzhen/iwslt-zh-en/train_sortByEn.tok.en',
     val_src = '/home/tw1682/Machine_Translation_NLP/iwsltzhen/tinytrain/src_token',

@@ -23,9 +23,9 @@ class EncoderRNN(nn.Module):
         embed = torch.nn.utils.rnn.pack_padded_sequence(embed, lengths.cpu().numpy(), batch_first=True)
         rnn_out, hidden = self.gru(embed, hidden)
         rnn_out, _ = torch.nn.utils.rnn.pad_packed_sequence(rnn_out, batch_first=True)
-        hidden = hidden.transpose(0,1).contiguous().view(1,batch_size,self.hidden_size*self.num_direction)
+        hidden = hidden.transpose(0,1).contiguous().view(1, batch_size, self.hidden_size*self.num_direction)
         return rnn_out, hidden
 
     def initHidden(self, batch_size):
-        hidden = torch.randn(self.num_direction, batch_size, self.hidden_size, device= self.device)
+        hidden = torch.randn(self.num_direction, batch_size, self.hidden_size, self.device)
         return hidden

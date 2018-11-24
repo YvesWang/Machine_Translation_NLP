@@ -20,7 +20,6 @@ from evaluation import evaluate
 #device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 #print(device)
 
-
 ####################Define Global Variable#########################
 
 
@@ -30,7 +29,7 @@ def train(input_tensor, input_lengths, target_tensor, target_lengths,
     '''
     finish train for a batch
     '''
-    batch_size = input_tensor.size()[0]
+    batch_size = input_tensor.size(0)
     encoder_hidden = encoder.initHidden(batch_size)
 
     encoder_optimizer.zero_grad()
@@ -54,8 +53,7 @@ def train(input_tensor, input_lengths, target_tensor, target_lengths,
                 decoder_input, decoder_hidden, input_lengths, encoder_outputs)
             sent_not_end_index = torch.LongTensor(sent_not_end_index).to(device)
             loss += criterion(decoder_output.index_select(0,sent_not_end_index), 
-                              target_tensor[:,decoding_token_index].index_select(
-                                  0,sent_not_end_index))
+                              target_tensor[:,decoding_token_index].index_select(0,sent_not_end_index))
             decoder_input = target_tensor[:,decoding_token_index].unsqueeze(1)  # Teacher forcing
             decoding_token_index += 1
             end_or_not = target_lengths > decoding_token_index
@@ -63,56 +61,61 @@ def train(input_tensor, input_lengths, target_tensor, target_lengths,
             
 
     else:
+        ### debug 
         # Without teacher forcing: use its own predictions as the next input
-        target_lengths = target_lengths.cpu().numpy()
+        target_lengths_numpy = target_lengths.cpu().numpy()
         sent_not_end_index = list(range(batch_size))
         decoding_token_index = 0
         while len(sent_not_end_index) > 0:
-            decoder_output, decoder_hidden, decoder_attention = decoder(
-                decoder_input, decoder_hidden,input_lengths, encoder_outputs)
+            decoder_output, decoder_hidden, decoder_attention_weights = decoder(
+                decoder_input, decoder_hidden, input_lengths, encoder_outputs)
             topv, topi = decoder_output.topk(1)
             decoder_input = topi.detach()  # detach from history as input
             #print(type(sent_not_end_index[0]))
             sent_not_end_index = torch.LongTensor(sent_not_end_index).to(device)
             loss += criterion(decoder_output.index_select(0,sent_not_end_index), 
-                              target_tensor[:,decoding_token_index].index_select(
-                                  0,sent_not_end_index))
+                              target_tensor[:,decoding_token_index].index_select(0,sent_not_end_index))
             decoding_token_index += 1
-            end_or_not = target_lengths > decoding_token_index
-            #(target_lengths > decoding_token_index)*(decoder_input.squeeze().numpy() != EOS_token)
+            end_or_not = target_lengths_numpy > decoding_token_index
+            #(target_lengths_numpy > decoding_token_index)*(decoder_input.squeeze().numpy() != EOS_token)
             sent_not_end_index = list(np.where(end_or_not)[0])
-            
+    
+    # average loss        
+    loss = torch.div(loss, target_lengths.mean())
     loss.backward()
+    ### TODO
+    # clip for gradient exploding 
     encoder_optimizer.step()
     decoder_optimizer.step()
 
-    return loss.item() / target_lengths.mean()
+    return loss.item()  #/target_lengths.mean()
 
 
 def trainIters(train_loader, val_loader, encoder, decoder, num_epochs, 
-               learning_rate,teacher_forcing_ratio, attention, srcLang, tgtLang):
+               learning_rate, teacher_forcing_ratio, attention, srcLang, tgtLang):
     start = time.time()
     plot_losses = []
-    encoder_optimizer = optim.SGD(encoder.parameters(), lr=learning_rate)
-    decoder_optimizer = optim.SGD(decoder.parameters(), lr=learning_rate)
+    encoder_optimizer = optim.Adam(encoder.parameters(), lr=learning_rate)
+    decoder_optimizer = optim.Adam(decoder.parameters(), lr=learning_rate)
 
     criterion = nn.NLLLoss()
     for epoch in range(num_epochs): 
         n_iter = 0
-        plot_losses = []
+        #plot_losses = []
         for input_tensor, input_lengths, target_tensor, target_lengths in train_loader:
             n_iter += 1
             #print('start_step: ', n_iter)
             loss = train(input_tensor, input_lengths, target_tensor, target_lengths, 
                          encoder, decoder, encoder_optimizer, decoder_optimizer, 
                          criterion, teacher_forcing_ratio, attention)
-            plot_losses.append(loss)
+            #plot_losses.append(loss)
             #print('*********',loss)
             if n_iter%200 == 0:
-                val_bleu, val_loss = evaluate(val_loader, encoder, decoder, criterion, tgt_max_length,srcLang.index2word ,tgtLang.index2word)
-                print('epoch: [{}], step: [{}/{}], train_loss:{}, val_bleu: {}, val_loss: {}'.format(epoch, n_iter, len(train_loader), loss, val_bleu, val_loss))
+                val_bleu, val_loss = evaluate(val_loader, encoder, decoder, criterion, tgt_max_length, srcLang.index2word, tgtLang.index2word)
+                print('epoch: [{}/{}], step: [{}/{}], train_loss:{}, val_bleu: {}, val_loss: {}'.format(
+                    epoch, num_epochs, n_iter, len(train_loader), loss, val_bleu, val_loss))
         val_bleu, val_loss = evaluate(val_loader, encoder, decoder, criterion, tgt_max_length,srcLang.index2word ,tgtLang.index2word)
-        print('epoch: [{}], val_bleu: {}, val_loss: {}'.format(epoch, val_bleu, val_loss))
+        print('epoch: [{}/{}], val_bleu: {}, val_loss: {}'.format(epoch, num_epochs, val_bleu, val_loss))
     return None
     
 
@@ -121,11 +124,10 @@ def start_train(transtype, paras):
     emb_size = paras['emb_size']
     hidden_size = paras['hidden_size']
     num_direction = paras['num_direction']
-    learning_rate=paras['learning_rate']
-    num_epochs=paras['num_epochs']
+    learning_rate = paras['learning_rate']
+    num_epochs = paras['num_epochs']
     batch_size = paras['batch_size']
     attention = paras['attention']
-    
     
     train_src_add = address_book['train_src']
     train_tgt_add = address_book['train_tgt']
@@ -152,17 +154,17 @@ def start_train(transtype, paras):
         for line in f:
             val_tgt.append(preposs_toekn(line[:-1].strip().split(' ')))
 
+    print('The number of train samples: ', len(train_src))
+    print('The number of val samples: ', len(val_src))
     srcLang = Lang('src')
-    srcLang.load_embedding(address_book['src_emb'],src_vocab_size)
+    srcLang.load_embedding(address_book['src_emb'], src_vocab_size)
     tgtLang = Lang('tgt')
-    tgtLang.load_embedding(address_book['tgt_emb'],tgt_vocab_size)
-    train_input_index = text2index(train_src,srcLang.word2index)
-    train_output_index = text2index(train_tgt,tgtLang.word2index)
-    val_input_index = text2index(val_src,srcLang.word2index)
-    val_output_index = text2index(val_tgt,tgtLang.word2index)
+    tgtLang.load_embedding(address_book['tgt_emb'], tgt_vocab_size)
+    train_input_index = text2index(train_src, srcLang.word2index)
+    train_output_index = text2index(train_tgt, tgtLang.word2index)
+    val_input_index = text2index(val_src, srcLang.word2index)
+    val_output_index = text2index(val_tgt, tgtLang.word2index)
     
-    
-
     train_dataset = VocabDataset(train_input_index,train_output_index)
     train_loader = torch.utils.data.DataLoader(dataset=train_dataset,
                                                batch_size=batch_size,
@@ -183,16 +185,18 @@ def start_train(transtype, paras):
 
     embedding_src_weight = torch.from_numpy(srcLang.embedding_matrix).to(device)
     embedding_tgt_weight = torch.from_numpy(tgtLang.embedding_matrix).to(device)
-    print(embedding_src_weight.size(),embedding_tgt_weight.size())
+    print(embedding_src_weight.size(), embedding_tgt_weight.size())
     if attention:
-        encoder = EncoderRNN(src_vocab_size, emb_size,hidden_size,num_direction, embedding_weight = embedding_src_weight, device = device)
+        encoder = EncoderRNN(src_vocab_size, emb_size, hidden_size, num_direction, embedding_weight = embedding_src_weight, device = device)
         decoder = DecoderAtten(emb_size, hidden_size, tgt_vocab_size, num_direction, embedding_weight = embedding_tgt_weight, device = device)
     else:      
         encoder = EncoderRNN(src_vocab_size, emb_size,hidden_size,num_direction, embedding_weight = embedding_src_weight, device = device)
         decoder = DecoderRNN(emb_size, hidden_size, tgt_vocab_size, num_direction, embedding_weight = embedding_tgt_weight, device = device)
     
     encoder, decoder = encoder.to(device), decoder.to(device)
+    print('Encoder:')
     print(encoder)
+    print('Decoder:')
     print(decoder)
     trainIters(train_loader, val_loader, encoder, decoder, num_epochs, learning_rate, teacher_forcing_ratio, attention, srcLang, tgtLang)
     
@@ -204,7 +208,7 @@ if __name__ == "__main__":
         emb_size = 300,
         hidden_size = 100,
         num_direction = 2,
-        learning_rate=0.01,
+        learning_rate=0.001,
         num_epochs=200,
         batch_size = 32, 
         attention = True 

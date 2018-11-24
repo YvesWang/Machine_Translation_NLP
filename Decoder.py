@@ -3,30 +3,30 @@ import torch
 import torch.nn.functional as F
 
 class DecoderRNN(nn.Module):
-    def __init__(self, emb_size, hidden_size, vocab_size, num_encoder_direction,  embedding_weight, device):
+    def __init__(self, emb_size, hidden_size, vocab_size, num_encoder_direction, embedding_weight, device):
         super(DecoderRNN, self).__init__()
         hidden_size = hidden_size * num_encoder_direction
         self.hidden_size = hidden_size
         if embedding_weight is not None:
             self.embedding = nn.Embedding.from_pretrained(embedding_weight, freeze = False)
         else:
-            self.embedding = nn.Embedding(vocab_size, hidden_size)
+            self.embedding = nn.Embedding(vocab_size, emb_size)
         self.gru = nn.GRU(emb_size, hidden_size, batch_first=True)
         self.out = nn.Linear(hidden_size, vocab_size)
         self.device = device
-        self.softmax = nn.LogSoftmax(dim=1)
+        self.logsoftmax = nn.LogSoftmax(dim=1)
 
-    def forward(self, src_input, hidden, true_len = None, encoder_outputs = None):
-        output = self.embedding(src_input)
+    def forward(self, tgt_input, hidden, true_len = None, encoder_outputs = None):
+        output = self.embedding(tgt_input)
         #print(output.size())
         output, hidden = self.gru(output, hidden)
-        logits = self.out(output[:,0,:])
-        output = self.softmax(logits)
+        logits = self.out(output.squeeze(1))
+        output = self.logsoftmax(logits)
         return output, hidden, None
     
 
 class DecoderAtten(nn.Module):
-    def __init__(self, emb_size, hidden_size, vocab_size, num_encoder_direction,  embedding_weight, device):
+    def __init__(self, emb_size, hidden_size, vocab_size, num_encoder_direction, embedding_weight, device):
         super(DecoderAtten, self).__init__()
         hidden_size = hidden_size * num_encoder_direction
         self.hidden_size = hidden_size
@@ -35,14 +35,14 @@ class DecoderAtten(nn.Module):
         else:
             self.embedding = nn.Embedding(vocab_size, emb_size)
         self.gru = nn.GRU(emb_size, hidden_size, batch_first=True)
-        self.atten = AttentionLayer(hidden_size,atten_type = 'dot_prod')
+        self.atten = AttentionLayer(hidden_size, atten_type='dot_prod')
         
         self.linear = nn.Linear(hidden_size * 2, hidden_size)
         self.out = nn.Linear(hidden_size, vocab_size)
         self.logsoftmax = nn.LogSoftmax(dim=1)
 
-    def forward(self, src_input, hidden, true_len, encoder_outputs):
-        output = self.embedding(src_input)
+    def forward(self, tgt_input, hidden, true_len, encoder_outputs):
+        output = self.embedding(tgt_input)
         #print(output.size())
         output, hidden = self.gru(output, hidden)
         ### add attention
@@ -67,7 +67,7 @@ class AttentionLayer(nn.Module):
         #self.atten = nn.Linear(key_size, 1)
 
     def forward(self, query, memory_bank, true_len):
-        batch_size, seq_len, hidden_size = memory_bank.size()
+        batch_size, src_len, hidden_size = memory_bank.size()
         query_len = query.size(1)
         #print('11111111111111111111')
         scores = self.atten_score(query, memory_bank)
@@ -77,21 +77,21 @@ class AttentionLayer(nn.Module):
         scores.masked_fill_(1-mask_matrix, float('-inf'))
         
         #print('111111333333333333331111')
-        scores_normalized = F.softmax(scores, dim=2)
+        scores_normalized = F.softmax(scores, dim=-1)
         #scores_normalized = F.softmax(scores.view(batch_size * query_len, seq_len), dim=-1).view(batch_size, query_len, seq_len)
         context = torch.bmm(scores_normalized, memory_bank)
         
         #print('1111111444444444444441111')
-        return context, scores
+        return context, scores_normalized
     
     def atten_score(self, query, memory_bank):
         """
-        query is: batch * target length * hidden size
-        memory_bank is batch * sequence length * hidden size
-        return batch * target length * sequence length
+        query: batch * tgt_length * hidden_size
+        memory_bank: batch * src_length * hidden_size
+        return: batch * tgt_length * src_length
         """
 
-        batch, seq_len, hidden_size = memory_bank.size()
+        batch, src_len, hidden_size = memory_bank.size()
         #query_len = query.size(1)
         if self.mode == 'dot_prod':
             out = torch.bmm(query, memory_bank.transpose(1, 2))

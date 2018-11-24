@@ -5,7 +5,7 @@ from config import *
 def preposs_toekn(tokens):
     return [token for token in tokens if token != '']
 
-def read_embedding(fasttest_home = './wiki-news-300d-1M.vec', words_to_load = 50000):
+def read_embedding(fasttest_home = './wiki-news-300d-1M.vec', words_to_load = 10000):
     words_ft = {}
     idx2words_ft = {}
     
@@ -61,7 +61,7 @@ class Lang:
             self.word2count[word] += 1
     
     def load_embedding(self,address,words_to_load):
-        self.word2index, self.index2word,self.embedding_matrix = read_embedding(address,words_to_load)
+        self.word2index, self.index2word, self.embedding_matrix = read_embedding(address, words_to_load)
         
 def text2index(data,word2index):
     indexdata = []
@@ -71,8 +71,7 @@ def text2index(data,word2index):
     print('finish')
     return indexdata
 
-
-def preparelang(name,data):
+def preparelang(name, data):
     lang = Lang(name)
     for line in data:
         for word in line:
