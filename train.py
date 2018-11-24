@@ -108,7 +108,7 @@ def trainIters(train_loader, val_loader, encoder, decoder, num_epochs,
                          criterion, teacher_forcing_ratio, attention)
             plot_losses.append(loss)
             #print('*********',loss)
-            if n_iter%2 == 0:
+            if n_iter%200 == 0:
                 val_bleu, val_loss = evaluate(val_loader, encoder, decoder, criterion, tgt_max_length,srcLang.index2word ,tgtLang.index2word)
                 print('epoch: [{}], step: [{}/{}], train_loss:{}, val_bleu: {}, val_loss: {}'.format(epoch, n_iter, len(train_loader), loss, val_bleu, val_loss))
         val_bleu, val_loss = evaluate(val_loader, encoder, decoder, criterion, tgt_max_length,srcLang.index2word ,tgtLang.index2word)
@@ -207,7 +207,7 @@ if __name__ == "__main__":
         learning_rate=0.01,
         num_epochs=200,
         batch_size = 32, 
-        attention = False 
+        attention = True 
     )
     start_train(transtype, paras)
 
