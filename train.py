@@ -102,15 +102,15 @@ def trainIters(train_loader, val_loader, encoder, decoder, num_epochs,
         plot_losses = []
         for input_tensor, input_lengths, target_tensor, target_lengths in train_loader:
             n_iter += 1
-            print('start_step: ', n_iter)
+            #print('start_step: ', n_iter)
             loss = train(input_tensor, input_lengths, target_tensor, target_lengths, 
                          encoder, decoder, encoder_optimizer, decoder_optimizer, 
                          criterion, teacher_forcing_ratio, attention)
             plot_losses.append(loss)
-            print('*********',loss)
-            if n_iter%100 == 0:
+            #print('*********',loss)
+            if n_iter%2 == 0:
                 val_bleu, val_loss = evaluate(val_loader, encoder, decoder, criterion, tgt_max_length,srcLang.index2word ,tgtLang.index2word)
-                print('epoch: [{}], step: [{}/{}], val_bleu: {}, val_loss: {}'.format(epoch, n_iter, len(train_loader), val_bleu, val_loss))
+                print('epoch: [{}], step: [{}/{}], train_loss:{}, val_bleu: {}, val_loss: {}'.format(epoch, n_iter, len(train_loader), loss, val_bleu, val_loss))
         val_bleu, val_loss = evaluate(val_loader, encoder, decoder, criterion, tgt_max_length,srcLang.index2word ,tgtLang.index2word)
         print('epoch: [{}], val_bleu: {}, val_loss: {}'.format(epoch, val_bleu, val_loss))
     return None
@@ -205,9 +205,9 @@ if __name__ == "__main__":
         hidden_size = 100,
         num_direction = 2,
         learning_rate=0.01,
-        num_epochs=10,
-        batch_size = 20, 
-        attention = True 
+        num_epochs=200,
+        batch_size = 32, 
+        attention = False 
     )
     start_train(transtype, paras)
 

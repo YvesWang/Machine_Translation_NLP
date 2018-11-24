@@ -77,8 +77,8 @@ class AttentionLayer(nn.Module):
         scores.masked_fill_(1-mask_matrix, float('-inf'))
         
         #print('111111333333333333331111')
-        #scores_normalized = F.softmax(scores, dim=2)
-        scores_normalized = F.softmax(scores.view(batch_size * query_len, seq_len), dim=-1).view(batch_size, query_len, seq_len)
+        scores_normalized = F.softmax(scores, dim=2)
+        #scores_normalized = F.softmax(scores.view(batch_size * query_len, seq_len), dim=-1).view(batch_size, query_len, seq_len)
         context = torch.bmm(scores_normalized, memory_bank)
         
         #print('1111111444444444444441111')

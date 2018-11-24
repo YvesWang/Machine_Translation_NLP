@@ -20,3 +20,12 @@ address_book = dict(
     src_emb = '../embedding/wiki.zh.vec',
     tgt_emb = '../embedding/wiki.en.vec'
 )
+
+address_book1 = dict(
+    train_src = '/home/tw1682/Machine_Translation_NLP/iwsltzhen/tinytrain/src_token',
+    train_tgt = '/home/tw1682/Machine_Translation_NLP/iwsltzhen/tinytrain/tgt_token',
+    val_src = '/home/tw1682/Machine_Translation_NLP/iwsltzhen/tinytrain/src_token',
+    val_tgt =  '/home/tw1682/Machine_Translation_NLP/iwsltzhen/tinytrain/tgt_token',
+    src_emb = '../embedding/wiki.zh.vec',
+    tgt_emb = '../embedding/wiki.en.vec'
+)
