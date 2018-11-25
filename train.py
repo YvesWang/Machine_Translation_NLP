@@ -116,8 +116,8 @@ def trainIters(train_loader, val_loader, encoder, decoder, num_epochs,
             loss = train(input_tensor, input_lengths, target_tensor, target_lengths, 
                          encoder, decoder, encoder_optimizer, decoder_optimizer, 
                          criterion, teacher_forcing_ratio)
-            if n_iter % 100 == 0:
-                val_bleu_sacre, val_bleu_nltk val_loss = evaluate(val_loader, encoder, decoder, criterion, tgt_max_length, tgtLang.index2word)
+            if n_iter % 500 == 0:
+                val_bleu_sacre, val_bleu_nltk, val_loss = evaluate(val_loader, encoder, decoder, criterion, tgt_max_length, tgtLang.index2word)
                 print('epoch: [{}/{}], step: [{}/{}], train_loss:{}, val_bleu_sacre: {}, val_bleu_nltk: {}, val_loss: {}'.format(
                     epoch, num_epochs, n_iter, len(train_loader), loss, val_bleu_sacre, val_bleu_nltk, val_loss))
                # for p in decoder.parameters():
@@ -241,13 +241,13 @@ if __name__ == "__main__":
         emb_size = 300,
         hidden_size = 100,
         num_direction = 2,
-        learning_rate = 1e-5,
+        learning_rate = 1e-4,
         num_epochs = 60,
         batch_size = 32, 
         attention_type = None, # None, dot_prod, general, concat
 
         model_save_info = dict(
-            model_path = 'nmt_models/model_withAtten_bi_lr=1e-5/',
+            model_path = 'nmt_models/model_test/',
             epochs_per_save_model = 10,
             model_path_for_resume = None #'nmt_models/epoch_0.pth'
             )

@@ -1,10 +1,9 @@
 # config:
 import torch
 import numpy as np
-import nltk.translate.bleu_score.corpus_bleu as nltk_corpus_bleu
+from nltk.translate import bleu_score 
 from config import SOS_token, EOS_token
-import sacrebleu.corpus_bleu as sacre_corpus_bleu  
-#from sacrebleu import corpus_bleu
+import sacrebleu
 
 def fun_index2token(index_list, idx2words):
     return [idx2words[index] for index in index_list]
@@ -41,7 +40,7 @@ def evaluate(loader, encoder, decoder, criterion, tgt_max_length, tgt_idx2words)
                 decoding_token_index += 1
                 if idx_token_pred == EOS_token:
                     break
-            tgt_sent_tokens = fun_index2token(target_tensor[:,target_lengths].cpu().squeeze().tolist(), tgt_idx2words)
+            tgt_sent_tokens = fun_index2token(target_tensor[:,:target_lengths].cpu().squeeze().tolist(), tgt_idx2words)
             tgt_sents_nltk.append([tgt_sent_tokens])
             tgt_sents_sacre.append(' '.join(tgt_sent_tokens))
             tgt_pred_sent_tokens = fun_index2token(tgt_pred_sentence, tgt_idx2words)
@@ -52,9 +51,9 @@ def evaluate(loader, encoder, decoder, criterion, tgt_max_length, tgt_idx2words)
             # if target_lengths == 0:
             #     print('fffffffffff',src_sents[-1],tgt_sents[-1])
             loss_all.append(loss.item()/min(decoding_token_index, target_lengths))
-    nltk_bleu_score = nltk_corpus_bleu(tgt_sents_nltk, tgt_pred_sents_nltk)
-    sacre_bleu_score = sacre_corpus_bleu(tgt_pred_sents_sacre, [tgt_sents_sacre], smooth='exp', smooth_floor=0.0, force=False, lowercase=False,
+    nltk_bleu_score = bleu_score.corpus_bleu(tgt_sents_nltk, tgt_pred_sents_nltk)
+    sacre_bleu_score = sacrebleu.corpus_bleu(tgt_pred_sents_sacre, [tgt_sents_sacre], smooth='exp', smooth_floor=0.0, force=False, lowercase=False,
         tokenize='none', use_effective_order=True)
     loss = np.mean(loss_all)
 
-    return sacre_bleu_score, nltk_bleu_score, loss
+    return sacre_bleu_score[0], nltk_bleu_score*100, loss
