@@ -27,5 +27,5 @@ class EncoderRNN(nn.Module):
         return rnn_out, hidden
 
     def initHidden(self, batch_size):
-        hidden = torch.randn(self.num_direction, batch_size, self.hidden_size, self.device)
+        hidden = torch.randn(self.num_direction, batch_size, self.hidden_size, device=self.device)
         return hidden

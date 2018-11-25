@@ -81,9 +81,9 @@ def train(input_tensor, input_lengths, target_tensor, target_lengths,
             sent_not_end_index = list(np.where(end_or_not)[0])
     
     # average loss        
-    loss = torch.div(loss, target_lengths.mean())
+    loss = torch.div(loss, target_lengths.type_as(loss).mean())
     loss.backward()
-    ### TODO
+    ### TODOi
     # clip for gradient exploding 
     encoder_optimizer.step()
     decoder_optimizer.step()
@@ -110,7 +110,7 @@ def trainIters(train_loader, val_loader, encoder, decoder, num_epochs,
                          criterion, teacher_forcing_ratio, attention)
             #plot_losses.append(loss)
             #print('*********',loss)
-            if n_iter%200 == 0:
+            if n_iter%10 == 0:
                 val_bleu, val_loss = evaluate(val_loader, encoder, decoder, criterion, tgt_max_length, srcLang.index2word, tgtLang.index2word)
                 print('epoch: [{}/{}], step: [{}/{}], train_loss:{}, val_bleu: {}, val_loss: {}'.format(
                     epoch, num_epochs, n_iter, len(train_loader), loss, val_bleu, val_loss))
@@ -207,11 +207,11 @@ if __name__ == "__main__":
         teacher_forcing_ratio = 0,
         emb_size = 300,
         hidden_size = 100,
-        num_direction = 2,
+        num_direction = 1,
         learning_rate=0.001,
-        num_epochs=200,
+        num_epochs=100,
         batch_size = 32, 
-        attention = True 
+        attention = False 
     )
     start_train(transtype, paras)
 
