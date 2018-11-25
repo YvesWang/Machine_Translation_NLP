@@ -63,11 +63,11 @@ class AttentionLayer(nn.Module):
             print('dot_prod')
         elif atten_type == 'general':
             print('general')
-            self.general_linear = nn.Linear(hidden_size, hidden_size)
+            self.general_linear = nn.Linear(hidden_size, hidden_size, bias = False)
         elif atten_type == 'concat':
             print('concat')
-            self.content_linear = nn.Linear(hidden_size * 2, hidden_size)
-            self.score_linear = nn.Linear(hidden_size , 1)
+            self.content_linear = nn.Linear(hidden_size * 2, hidden_size, bias = True)
+            self.score_linear = nn.Linear(hidden_size , 1, bias = False)
         else:
             print('mode out of bound')
         #elif atten_type == 
