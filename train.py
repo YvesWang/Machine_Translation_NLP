@@ -1,6 +1,6 @@
 import numpy as np
 import time
-import os.path
+import os
 import torch.nn as nn
 import torch
 from torch import optim
@@ -115,7 +115,7 @@ def trainIters(train_loader, val_loader, encoder, decoder, num_epochs,
             loss = train(input_tensor, input_lengths, target_tensor, target_lengths, 
                          encoder, decoder, encoder_optimizer, decoder_optimizer, 
                          criterion, teacher_forcing_ratio, attention)
-            if n_iter % 10 == 0:
+            if n_iter % 500 == 0:
                 val_bleu, val_loss = evaluate(val_loader, encoder, decoder, criterion, tgt_max_length, srcLang.index2word, tgtLang.index2word)
                 print('epoch: [{}/{}], step: [{}/{}], train_loss:{}, val_bleu: {}, val_loss: {}'.format(
                     epoch, num_epochs, n_iter, len(train_loader), loss, val_bleu, val_loss))
@@ -154,7 +154,10 @@ def start_train(transtype, paras):
     train_tgt_add = address_book['train_tgt']
     val_src_add = address_book['val_src']
     val_tgt_add = address_book['val_tgt']
-
+	
+    # make dir for saving models
+    if not os.path.exists(model_save_info['model_path']):
+        os.makedirs(model_save_info['model_path'])
 
     train_src = []
     with open(train_src_add) as f:
@@ -229,18 +232,19 @@ if __name__ == "__main__":
         teacher_forcing_ratio = 0,
         emb_size = 300,
         hidden_size = 100,
-        num_direction = 1,
-        learning_rate = 0.001,
-        num_epochs = 100,
+        num_direction = 2,
+        learning_rate = 0.0001,
+        num_epochs = 60,
         batch_size = 32, 
-        attention = False,
+        attention = True,
 
         model_save_info = dict(
-            model_path = 'nmt_models/',
+            model_path = 'nmt_models/model_withAtten_bi_lr=0.0001/',
             epochs_per_save_model = 10,
             model_path_for_resume = None #'nmt_models/epoch_0.pth'
             )
     )
+    print('paras: ', paras)
     start_train(transtype, paras)
 
 
