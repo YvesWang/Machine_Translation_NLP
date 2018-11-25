@@ -109,15 +109,13 @@ def trainIters(train_loader, val_loader, encoder, decoder, num_epochs,
 
     for epoch in range(num_epochs): 
         n_iter = 0
-        #plot_losses = []
         for input_tensor, input_lengths, target_tensor, target_lengths in train_loader:
             n_iter += 1
             #print('start_step: ', n_iter)
             loss = train(input_tensor, input_lengths, target_tensor, target_lengths, 
                          encoder, decoder, encoder_optimizer, decoder_optimizer, 
                          criterion, teacher_forcing_ratio, attention)
-            #plot_losses.append(loss)
-            #print('*********',loss)
+            break
             if n_iter % 10 == 0:
                 val_bleu, val_loss = evaluate(val_loader, encoder, decoder, criterion, tgt_max_length, srcLang.index2word, tgtLang.index2word)
                 print('epoch: [{}/{}], step: [{}/{}], train_loss:{}, val_bleu: {}, val_loss: {}'.format(
@@ -129,7 +127,7 @@ def trainIters(train_loader, val_loader, encoder, decoder, num_epochs,
         if max_val_bleu < val_bleu:
             max_val_bleu = val_bleu
             ### TODO save best model
-        if epoch % epochs_per_save_model == 0:
+        if epoch % model_save_info['epochs_per_save_model'] == 0:
             check_point_state = {
                 'epoch': epoch,
                 'encoder_state_dict': encoder.state_dict(),
@@ -137,8 +135,9 @@ def trainIters(train_loader, val_loader, encoder, decoder, num_epochs,
                 'decoder_state_dict': decoder.state_dict(),
                 'decoder_optimizer_state_dict': decoder_optimizer.state_dict()
                 }
-            torch.save(check_point_state, model_save_info['model_path'])
-
+            torch.save(check_point_state, '{}epoch_{}.pth'.format(model_save_info['model_path'], epoch))
+        break
+        
     return None
     
 
@@ -151,7 +150,6 @@ def start_train(transtype, paras):
     num_epochs = paras['num_epochs']
     batch_size = paras['batch_size']
     attention = paras['attention']
-    pretrained_model_path = paras['pretrained_model_path']
     model_save_info = paras['model_save_info']
 
     train_src_add = address_book['train_src']
@@ -242,7 +240,7 @@ if __name__ == "__main__":
         model_save_info = dict(
             model_path = 'nmt_models/',
             epochs_per_save_model = 10,
-            model_path_for_resume = 'nmt_models/***'
+            model_path_for_resume = 'nmt_models/epoch_0.pth'
             )
     )
     start_train(transtype, paras)
