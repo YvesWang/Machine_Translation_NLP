@@ -92,13 +92,21 @@ def train(input_tensor, input_lengths, target_tensor, target_lengths,
 
 
 def trainIters(train_loader, val_loader, encoder, decoder, num_epochs, 
-               learning_rate, teacher_forcing_ratio, attention, srcLang, tgtLang):
-    start = time.time()
-    plot_losses = []
+               learning_rate, teacher_forcing_ratio, attention, srcLang, tgtLang, model_save_info):
+
     encoder_optimizer = optim.Adam(encoder.parameters(), lr=learning_rate)
     decoder_optimizer = optim.Adam(decoder.parameters(), lr=learning_rate)
 
+    if model_save_info['model_path_for_resume'] is not None:
+        check_point_state = torch.load(model_save_info['model_path_for_resume'])
+        encoder.load_state_dict(check_point_state['encoder_state_dict'])
+        encoder_optimizer.load_state_dict(check_point_state['encoder_optimizer_state_dict'])
+        decoder.load_state_dict(check_point_state['decoder_state_dict'])
+        decoder_optimizer.load_state_dict(check_point_state['decoder_optimizer_state_dict'])
+
     criterion = nn.NLLLoss()
+    max_val_bleu = 0
+
     for epoch in range(num_epochs): 
         n_iter = 0
         #plot_losses = []
@@ -110,12 +118,27 @@ def trainIters(train_loader, val_loader, encoder, decoder, num_epochs,
                          criterion, teacher_forcing_ratio, attention)
             #plot_losses.append(loss)
             #print('*********',loss)
-            if n_iter%10 == 0:
+            if n_iter % 10 == 0:
                 val_bleu, val_loss = evaluate(val_loader, encoder, decoder, criterion, tgt_max_length, srcLang.index2word, tgtLang.index2word)
                 print('epoch: [{}/{}], step: [{}/{}], train_loss:{}, val_bleu: {}, val_loss: {}'.format(
                     epoch, num_epochs, n_iter, len(train_loader), loss, val_bleu, val_loss))
+
         val_bleu, val_loss = evaluate(val_loader, encoder, decoder, criterion, tgt_max_length,srcLang.index2word ,tgtLang.index2word)
         print('epoch: [{}/{}], val_bleu: {}, val_loss: {}'.format(epoch, num_epochs, val_bleu, val_loss))
+
+        if max_val_bleu < val_bleu:
+            max_val_bleu = val_bleu
+            ### TODO save best model
+        if epoch % epochs_per_save_model == 0:
+            check_point_state = {
+                'epoch': epoch,
+                'encoder_state_dict': encoder.state_dict(),
+                'encoder_optimizer_state_dict': encoder_optimizer.state_dict(),
+                'decoder_state_dict': decoder.state_dict(),
+                'decoder_optimizer_state_dict': decoder_optimizer.state_dict()
+                }
+            torch.save(check_point_state, model_save_info['model_path'])
+
     return None
     
 
@@ -128,11 +151,14 @@ def start_train(transtype, paras):
     num_epochs = paras['num_epochs']
     batch_size = paras['batch_size']
     attention = paras['attention']
-    
+    pretrained_model_path = paras['pretrained_model_path']
+    model_save_info = paras['model_save_info']
+
     train_src_add = address_book['train_src']
     train_tgt_add = address_book['train_tgt']
     val_src_add = address_book['val_src']
     val_tgt_add = address_book['val_tgt']
+
 
     train_src = []
     with open(train_src_add) as f:
@@ -198,7 +224,7 @@ def start_train(transtype, paras):
     print(encoder)
     print('Decoder:')
     print(decoder)
-    trainIters(train_loader, val_loader, encoder, decoder, num_epochs, learning_rate, teacher_forcing_ratio, attention, srcLang, tgtLang)
+    trainIters(train_loader, val_loader, encoder, decoder, num_epochs, learning_rate, teacher_forcing_ratio, attention, srcLang, tgtLang, model_save_info)
     
 
 if __name__ == "__main__":
@@ -208,10 +234,16 @@ if __name__ == "__main__":
         emb_size = 300,
         hidden_size = 100,
         num_direction = 1,
-        learning_rate=0.001,
-        num_epochs=100,
+        learning_rate = 0.001,
+        num_epochs = 100,
         batch_size = 32, 
-        attention = False 
+        attention = False,
+
+        model_save_info = dict(
+            model_path = 'nmt_models/',
+            epochs_per_save_model = 10,
+            model_path_for_resume = 'nmt_models/***'
+            )
     )
     start_train(transtype, paras)
 
