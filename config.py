@@ -12,7 +12,7 @@ UNK_token = 3
 
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
-address_book = dict(
+address_book1 = dict(
     train_src = 'Machine_Translation_NLP/iwsltzhen/iwslt-zh-en/train_sortByEn.tok.zh',
     train_tgt = 'Machine_Translation_NLP/iwsltzhen/iwslt-zh-en/train_sortByEn.tok.en',
     val_src = 'Machine_Translation_NLP/iwsltzhen/iwslt-zh-en/dev.tok.zh',
@@ -22,19 +22,19 @@ address_book = dict(
 )
 
 address_book1 = dict(
-    train_src = '/home/tw1682/Machine_Translation_NLP/iwsltzhen/tinytrain/src_token',
-    train_tgt = '/home/tw1682/Machine_Translation_NLP/iwsltzhen/tinytrain/tgt_token',
-    val_src = '/home/tw1682/Machine_Translation_NLP/iwsltzhen/tinytrain/src_token',
-    val_tgt =  '/home/tw1682/Machine_Translation_NLP/iwsltzhen/tinytrain/tgt_token',
-    src_emb = '../embedding/wiki.zh.vec',
-    tgt_emb = '../embedding/wiki.en.vec'
+    train_src = 'Data/news_token_zh_en.zh',
+    train_tgt = 'Data/news_token_zh_en_nltk.en',
+    val_src = 'Machine_Translation_NLP/iwsltzhen/iwslt-zh-en/dev.tok.zh',
+    val_tgt = 'Machine_Translation_NLP/iwsltzhen/iwslt-zh-en/dev.tok.en',
+    src_emb = 'embedding/wiki.zh.vec',
+    tgt_emb = 'embedding/wiki.en.vec'
 )
 
-address_book1 = dict(
-    train_src = '/home/tw1682/Machine_Translation_NLP/iwsltzhen/iwslt-zh-en/train_sortByEn.tok.zh',
-    train_tgt = '/home/tw1682/Machine_Translation_NLP/iwsltzhen/iwslt-zh-en/train_sortByEn.tok.en',
-    val_src = '/home/tw1682/Machine_Translation_NLP/iwsltzhen/tinytrain/src_token',
-    val_tgt =  '/home/tw1682/Machine_Translation_NLP/iwsltzhen/tinytrain/tgt_token',
-    src_emb = '../embedding/wiki.zh.vec',
-    tgt_emb = '../embedding/wiki.en.vec'
+address_book = dict(
+    train_src = 'Data/src_tokens',
+    train_tgt = 'Data/tgt_tokens',
+    val_src = 'Machine_Translation_NLP/iwsltzhen/iwslt-zh-en/dev.tok.zh',
+    val_tgt = 'Machine_Translation_NLP/iwsltzhen/iwslt-zh-en/dev.tok.en',
+    src_emb = 'embedding/wiki.zh.vec',
+    tgt_emb = 'embedding/wiki.en.vec'
 )
