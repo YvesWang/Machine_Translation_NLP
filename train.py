@@ -83,7 +83,8 @@ def train(input_tensor, input_lengths, target_tensor, target_lengths,
     # average loss        
     loss = torch.div(loss, target_lengths.type_as(loss).mean())
     loss.backward()
-    ### TODOi
+
+    ### TODO
     # clip for gradient exploding 
     encoder_optimizer.step()
     decoder_optimizer.step()
@@ -119,7 +120,14 @@ def trainIters(train_loader, val_loader, encoder, decoder, num_epochs,
                 val_bleu, val_loss = evaluate(val_loader, encoder, decoder, criterion, tgt_max_length, srcLang.index2word, tgtLang.index2word)
                 print('epoch: [{}/{}], step: [{}/{}], train_loss:{}, val_bleu: {}, val_loss: {}'.format(
                     epoch, num_epochs, n_iter, len(train_loader), loss, val_bleu, val_loss))
-
+               # for p in decoder.parameters():
+               #     print('Decoder grad mean:')
+               #     print(p.grad.data.abs().mean().item(), end=' ')
+               #     print('---------')
+               # for p in encoder.parameters():
+               #     print('Encoder grad mean:')
+               #     print(p.grad.data.abs().mean().item(), end=' ')
+               #     print('----------')
         val_bleu, val_loss = evaluate(val_loader, encoder, decoder, criterion, tgt_max_length,srcLang.index2word ,tgtLang.index2word)
         print('epoch: [{}/{}], val_bleu: {}, val_loss: {}'.format(epoch, num_epochs, val_bleu, val_loss))
 
