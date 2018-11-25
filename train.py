@@ -110,6 +110,7 @@ def trainIters(train_loader, val_loader, encoder, decoder, num_epochs,
 
     for epoch in range(num_epochs): 
         n_iter = 0
+        start_time = time.time()
         for input_tensor, input_lengths, target_tensor, target_lengths in train_loader:
             n_iter += 1
             #print('start_step: ', n_iter)
@@ -129,10 +130,9 @@ def trainIters(train_loader, val_loader, encoder, decoder, num_epochs,
                #     print(p.grad.data.abs().mean().item(), end=' ')
                #     print('----------')
         val_bleu_sacre, val_bleu_nltk, val_loss = evaluate(val_loader, encoder, decoder, criterion, tgt_max_length, tgtLang.index2word)
-        print('epoch: [{}/{}], val_bleu_sacre: {}, val_bleu_nltk: {}, val_loss: {}'.format(epoch, num_epochs, val_bleu_sacre, val_bleu_nltk, val_loss))
-
-        if max_val_bleu < val_bleu:
-            max_val_bleu = val_bleu
+        print('epoch: [{}/{}] (Running time {.6f} min), val_bleu_sacre: {}, val_bleu_nltk: {}, val_loss: {}'.format(epoch, num_epochs, (time.time()-start_time)/60, val_bleu_sacre, val_bleu_nltk, val_loss))
+        if max_val_bleu < val_bleu_sacre:
+            max_val_bleu = val_bleu_sacre
             ### TODO save best model
         if epoch % model_save_info['epochs_per_save_model'] == 0:
             check_point_state = {
