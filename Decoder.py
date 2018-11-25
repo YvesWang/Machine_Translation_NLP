@@ -26,7 +26,7 @@ class DecoderRNN(nn.Module):
     
 
 class DecoderAtten(nn.Module):
-    def __init__(self, emb_size, hidden_size, vocab_size, num_encoder_direction, embedding_weight, device):
+    def __init__(self, emb_size, hidden_size, vocab_size, num_encoder_direction, embedding_weight, atten_type, device):
         super(DecoderAtten, self).__init__()
         hidden_size = hidden_size * num_encoder_direction
         self.hidden_size = hidden_size
@@ -35,7 +35,7 @@ class DecoderAtten(nn.Module):
         else:
             self.embedding = nn.Embedding(vocab_size, emb_size)
         self.gru = nn.GRU(emb_size, hidden_size, batch_first=True)
-        self.atten = AttentionLayer(hidden_size, atten_type='dot_prod')
+        self.atten = AttentionLayer(hidden_size, atten_type= atten_type)
         
         self.linear = nn.Linear(hidden_size * 2, hidden_size)
         self.out = nn.Linear(hidden_size, vocab_size)
@@ -104,7 +104,7 @@ class AttentionLayer(nn.Module):
         elif self.mode == 'concat':
             query_temp = query.unsqueeze(2).expand(batch_size,query_len,src_len,hidden_size)
             memory_temp = memory_bank.unsqueeze(1).expand(batch_size,query_len,src_len,hidden_size)
-            content_out = self.content_linear(torch.cat((query_temp,memory_temp),-1).view(batch_size * query_len * src_len, hidden_size))
+            content_out = self.content_linear(torch.cat((query_temp,memory_temp),-1).view(batch_size * query_len * src_len, hidden_size*2))
             content_out = torch.tanh(content_out)
             out = self.score_linear(content_out)
             out = out.view(batch_size , query_len , src_len).squeeze(-1)

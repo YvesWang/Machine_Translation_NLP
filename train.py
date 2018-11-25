@@ -25,7 +25,7 @@ from evaluation import evaluate
 
 def train(input_tensor, input_lengths, target_tensor, target_lengths,
           encoder, decoder, encoder_optimizer, decoder_optimizer, criterion, 
-          teacher_forcing_ratio, attention):
+          teacher_forcing_ratio):
     '''
     finish train for a batch
     '''
@@ -93,7 +93,7 @@ def train(input_tensor, input_lengths, target_tensor, target_lengths,
 
 
 def trainIters(train_loader, val_loader, encoder, decoder, num_epochs, 
-               learning_rate, teacher_forcing_ratio, attention, srcLang, tgtLang, model_save_info):
+               learning_rate, teacher_forcing_ratio, srcLang, tgtLang, model_save_info):
 
     encoder_optimizer = optim.Adam(encoder.parameters(), lr=learning_rate)
     decoder_optimizer = optim.Adam(decoder.parameters(), lr=learning_rate)
@@ -115,8 +115,8 @@ def trainIters(train_loader, val_loader, encoder, decoder, num_epochs,
             #print('start_step: ', n_iter)
             loss = train(input_tensor, input_lengths, target_tensor, target_lengths, 
                          encoder, decoder, encoder_optimizer, decoder_optimizer, 
-                         criterion, teacher_forcing_ratio, attention)
-            if n_iter % 500 == 0:
+                         criterion, teacher_forcing_ratio)
+            if n_iter % 100 == 0:
                 val_bleu, val_loss = evaluate(val_loader, encoder, decoder, criterion, tgt_max_length, srcLang.index2word, tgtLang.index2word)
                 print('epoch: [{}/{}], step: [{}/{}], train_loss:{}, val_bleu: {}, val_loss: {}'.format(
                     epoch, num_epochs, n_iter, len(train_loader), loss, val_bleu, val_loss))
@@ -155,7 +155,7 @@ def start_train(transtype, paras):
     learning_rate = paras['learning_rate']
     num_epochs = paras['num_epochs']
     batch_size = paras['batch_size']
-    attention = paras['attention']
+    attention_type = paras['attention_type']
     model_save_info = paras['model_save_info']
 
     train_src_add = address_book['train_src']
@@ -219,9 +219,9 @@ def start_train(transtype, paras):
     embedding_src_weight = torch.from_numpy(srcLang.embedding_matrix).to(device)
     embedding_tgt_weight = torch.from_numpy(tgtLang.embedding_matrix).to(device)
     print(embedding_src_weight.size(), embedding_tgt_weight.size())
-    if attention:
+    if attention_type:
         encoder = EncoderRNN(src_vocab_size, emb_size, hidden_size, num_direction, embedding_weight = embedding_src_weight, device = device)
-        decoder = DecoderAtten(emb_size, hidden_size, tgt_vocab_size, num_direction, embedding_weight = embedding_tgt_weight, device = device)
+        decoder = DecoderAtten(emb_size, hidden_size, tgt_vocab_size, num_direction, embedding_weight = embedding_tgt_weight, atten_type = attention_type, device = device)
     else:      
         encoder = EncoderRNN(src_vocab_size, emb_size,hidden_size,num_direction, embedding_weight = embedding_src_weight, device = device)
         decoder = DecoderRNN(emb_size, hidden_size, tgt_vocab_size, num_direction, embedding_weight = embedding_tgt_weight, device = device)
@@ -231,7 +231,7 @@ def start_train(transtype, paras):
     print(encoder)
     print('Decoder:')
     print(decoder)
-    trainIters(train_loader, val_loader, encoder, decoder, num_epochs, learning_rate, teacher_forcing_ratio, attention, srcLang, tgtLang, model_save_info)
+    trainIters(train_loader, val_loader, encoder, decoder, num_epochs, learning_rate, teacher_forcing_ratio, srcLang, tgtLang, model_save_info)
     
 
 if __name__ == "__main__":
@@ -241,13 +241,13 @@ if __name__ == "__main__":
         emb_size = 300,
         hidden_size = 100,
         num_direction = 2,
-        learning_rate = 0.0001,
+        learning_rate = 1e-5,
         num_epochs = 60,
         batch_size = 32, 
-        attention = True,
+        attention_type = None, # None, dot_prod, general, concat
 
         model_save_info = dict(
-            model_path = 'nmt_models/model_withAtten_bi_lr=0.0001/',
+            model_path = 'nmt_models/model_withAtten_bi_lr=1e-5/',
             epochs_per_save_model = 10,
             model_path_for_resume = None #'nmt_models/epoch_0.pth'
             )
