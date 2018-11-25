@@ -117,9 +117,9 @@ def trainIters(train_loader, val_loader, encoder, decoder, num_epochs,
                          encoder, decoder, encoder_optimizer, decoder_optimizer, 
                          criterion, teacher_forcing_ratio)
             if n_iter % 100 == 0:
-                val_bleu, val_loss = evaluate(val_loader, encoder, decoder, criterion, tgt_max_length, srcLang.index2word, tgtLang.index2word)
-                print('epoch: [{}/{}], step: [{}/{}], train_loss:{}, val_bleu: {}, val_loss: {}'.format(
-                    epoch, num_epochs, n_iter, len(train_loader), loss, val_bleu, val_loss))
+                val_bleu_sacre, val_bleu_nltk val_loss = evaluate(val_loader, encoder, decoder, criterion, tgt_max_length, tgtLang.index2word)
+                print('epoch: [{}/{}], step: [{}/{}], train_loss:{}, val_bleu_sacre: {}, val_bleu_nltk: {}, val_loss: {}'.format(
+                    epoch, num_epochs, n_iter, len(train_loader), loss, val_bleu_sacre, val_bleu_nltk, val_loss))
                # for p in decoder.parameters():
                #     print('Decoder grad mean:')
                #     print(p.grad.data.abs().mean().item(), end=' ')
@@ -128,8 +128,8 @@ def trainIters(train_loader, val_loader, encoder, decoder, num_epochs,
                #     print('Encoder grad mean:')
                #     print(p.grad.data.abs().mean().item(), end=' ')
                #     print('----------')
-        val_bleu, val_loss = evaluate(val_loader, encoder, decoder, criterion, tgt_max_length,srcLang.index2word ,tgtLang.index2word)
-        print('epoch: [{}/{}], val_bleu: {}, val_loss: {}'.format(epoch, num_epochs, val_bleu, val_loss))
+        val_bleu_sacre, val_bleu_nltk, val_loss = evaluate(val_loader, encoder, decoder, criterion, tgt_max_length, tgtLang.index2word)
+        print('epoch: [{}/{}], val_bleu_sacre: {}, val_bleu_nltk: {}, val_loss: {}'.format(epoch, num_epochs, val_bleu_sacre, val_bleu_nltk, val_loss))
 
         if max_val_bleu < val_bleu:
             max_val_bleu = val_bleu
