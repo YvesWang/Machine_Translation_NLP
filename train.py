@@ -115,7 +115,6 @@ def trainIters(train_loader, val_loader, encoder, decoder, num_epochs,
             loss = train(input_tensor, input_lengths, target_tensor, target_lengths, 
                          encoder, decoder, encoder_optimizer, decoder_optimizer, 
                          criterion, teacher_forcing_ratio, attention)
-            break
             if n_iter % 10 == 0:
                 val_bleu, val_loss = evaluate(val_loader, encoder, decoder, criterion, tgt_max_length, srcLang.index2word, tgtLang.index2word)
                 print('epoch: [{}/{}], step: [{}/{}], train_loss:{}, val_bleu: {}, val_loss: {}'.format(
@@ -136,8 +135,7 @@ def trainIters(train_loader, val_loader, encoder, decoder, num_epochs,
                 'decoder_optimizer_state_dict': decoder_optimizer.state_dict()
                 }
             torch.save(check_point_state, '{}epoch_{}.pth'.format(model_save_info['model_path'], epoch))
-        break
-        
+
     return None
     
 
@@ -240,7 +238,7 @@ if __name__ == "__main__":
         model_save_info = dict(
             model_path = 'nmt_models/',
             epochs_per_save_model = 10,
-            model_path_for_resume = 'nmt_models/epoch_0.pth'
+            model_path_for_resume = None #'nmt_models/epoch_0.pth'
             )
     )
     start_train(transtype, paras)
