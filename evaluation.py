@@ -80,7 +80,7 @@ def evaluate_batch(loader, encoder, decoder, criterion, tgt_max_length, tgt_idx2
 
             encoder_outputs, encoder_hidden = encoder(input_tensor, encoder_hidden, input_lengths)
             decoder_input = torch.tensor([[SOS_token]*batch_size], device=device).transpose(0,1)
-            decoder_hidden = encoder_hidden
+            decoder_hidden = decoder.initHidden(encoder_hidden)
 
             decoding_token_index = 0
             loss = 0 
