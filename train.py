@@ -12,7 +12,7 @@ from Encoder import EncoderRNN
 from Decoder import DecoderRNN, DecoderAtten
 from config import *
 import random
-from evaluation import evaluate
+from evaluation import evaluate, evaluate_batch
 
 
 ####################Define Global Variable#########################
@@ -109,7 +109,7 @@ def trainIters(train_loader, val_loader, encoder, decoder, num_epochs,
     max_val_bleu = 0
 
     for epoch in range(num_epochs): 
-        n_iter = 0
+        n_iter = -1
         start_time = time.time()
         for input_tensor, input_lengths, target_tensor, target_lengths in train_loader:
             n_iter += 1
@@ -118,9 +118,12 @@ def trainIters(train_loader, val_loader, encoder, decoder, num_epochs,
                          encoder, decoder, encoder_optimizer, decoder_optimizer, 
                          criterion, teacher_forcing_ratio)
             if n_iter % 500 == 0:
-                val_bleu_sacre, val_bleu_nltk, val_loss = evaluate(val_loader, encoder, decoder, criterion, tgt_max_length, tgtLang.index2word)
+                #print()
+                #eva_start = time.time()
+                val_bleu_sacre, val_bleu_nltk, val_loss = evaluate_batch(val_loader, encoder, decoder, criterion, tgt_max_length, tgtLang.index2word)
+                #print((time.time()-eva_start)/60)
                 print('epoch: [{}/{}], step: [{}/{}], train_loss:{}, val_bleu_sacre: {}, val_bleu_nltk: {}, val_loss: {}'.format(
-                    epoch, num_epochs, n_iter, len(train_loader), loss, val_bleu_sacre, val_bleu_nltk, val_loss))
+                    epoch, num_epochs, n_iter, len(train_loader), loss, val_bleu_sacre[0], val_bleu_nltk, val_loss))
                # for p in decoder.parameters():
                #     print('Decoder grad mean:')
                #     print(p.grad.data.abs().mean().item(), end=' ')
@@ -129,8 +132,8 @@ def trainIters(train_loader, val_loader, encoder, decoder, num_epochs,
                #     print('Encoder grad mean:')
                #     print(p.grad.data.abs().mean().item(), end=' ')
                #     print('----------')
-        val_bleu_sacre, val_bleu_nltk, val_loss = evaluate(val_loader, encoder, decoder, criterion, tgt_max_length, tgtLang.index2word)
-        print('epoch: [{}/{}] (Running time {.6f} min), val_bleu_sacre: {}, val_bleu_nltk: {}, val_loss: {}'.format(epoch, num_epochs, (time.time()-start_time)/60, val_bleu_sacre, val_bleu_nltk, val_loss))
+        val_bleu_sacre, val_bleu_nltk, val_loss = evaluate_batch(val_loader, encoder, decoder, criterion, tgt_max_length, tgtLang.index2word)
+        print('epoch: [{}/{}] (Running time {:.6f} min), val_bleu_sacre: {}, val_bleu_nltk: {}, val_loss: {}'.format(epoch, num_epochs, (time.time()-start_time)/60, val_bleu_sacre, val_bleu_nltk, val_loss))
         if max_val_bleu < val_bleu_sacre:
             max_val_bleu = val_bleu_sacre
             ### TODO save best model
@@ -257,8 +260,3 @@ if __name__ == "__main__":
 
 
 
-
-
-
-
-        

@@ -86,15 +86,15 @@ def evaluate_batch(loader, encoder, decoder, criterion, tgt_max_length, tgt_idx2
             loss = 0 
             target_lengths_numpy = target_lengths.cpu().numpy()
             #sent_not_end_index = list(range(batch_size))
-            tgt_pred_sentence = ### 
-            idx_token_pred = np.zeros(batch_size, tgt_max_length)
+            idx_token_pred = np.zeros((batch_size, tgt_max_length))
             while decoding_token_index < tgt_max_length:
                 decoder_output, decoder_hidden, _ = decoder(decoder_input, decoder_hidden, input_lengths, encoder_outputs)
                 topv, topi = decoder_output.topk(1)
                 decoder_input = topi.detach()  # detach from history as input
                 idx_token_pred_step = decoder_input.cpu().squeeze(1).numpy()
                 idx_token_pred[:, decoding_token_index] = idx_token_pred_step
-                loss += criterion(decoder_output, target_tensor[:,decoding_token_index])
+                if decoding_token_index < target_lengths_numpy.max():
+                    loss += criterion(decoder_output, target_tensor[:,decoding_token_index])
                 decoding_token_index += 1
                 end_or_not = idx_token_pred_step != EOS_token
                 sent_not_end_index = list(np.where(end_or_not)[0])
