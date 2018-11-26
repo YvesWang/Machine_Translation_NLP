@@ -45,44 +45,66 @@ def train(input_tensor, input_lengths, target_tensor, target_lengths,
     use_teacher_forcing = True if random.random() < teacher_forcing_ratio else False
 
     if use_teacher_forcing:
-        # Teacher forcing: Feed the target as the next input
-        target_lengths = target_lengths.cpu().numpy()
-        sent_not_end_index = list(range(batch_size))
+        #### Teacher forcing: Feed the target as the next input
+        # target_lengths = target_lengths.cpu().numpy()
+        # sent_not_end_index = list(range(batch_size))
+        # decoding_token_index = 0
+        # while len(sent_not_end_index) > 0:
+        #     decoder_output, decoder_hidden, decoder_attention = decoder(
+        #         decoder_input, decoder_hidden, input_lengths, encoder_outputs)
+        #     sent_not_end_index = torch.LongTensor(sent_not_end_index).to(device)
+        #     loss += criterion(decoder_output.index_select(0,sent_not_end_index), 
+        #                       target_tensor[:,decoding_token_index].index_select(0,sent_not_end_index))
+        #     decoder_input = target_tensor[:,decoding_token_index].unsqueeze(1)  # Teacher forcing
+        #     decoding_token_index += 1
+        #     end_or_not = target_lengths > decoding_token_index
+        #     sent_not_end_index = list(np.where(end_or_not)[0])
+        ### simple version; 
         decoding_token_index = 0
-        while len(sent_not_end_index) > 0:
+        tgt_max_len_batch = target_lengths.cpu().max().item()
+        assert(tgt_max_len_batch==target_tensor.size(1))
+        while decoding_token_index < tgt_max_len_batch
             decoder_output, decoder_hidden, decoder_attention = decoder(
                 decoder_input, decoder_hidden, input_lengths, encoder_outputs)
-            sent_not_end_index = torch.LongTensor(sent_not_end_index).to(device)
-            loss += criterion(decoder_output.index_select(0,sent_not_end_index), 
-                              target_tensor[:,decoding_token_index].index_select(0,sent_not_end_index))
+            loss += criterion(decoder_output, target_tensor[:,decoding_token_index])
             decoder_input = target_tensor[:,decoding_token_index].unsqueeze(1)  # Teacher forcing
             decoding_token_index += 1
-            end_or_not = target_lengths > decoding_token_index
-            sent_not_end_index = list(np.where(end_or_not)[0])
-            
 
     else:
         ### debug 
-        # Without teacher forcing: use its own predictions as the next input
-        target_lengths_numpy = target_lengths.cpu().numpy()
-        sent_not_end_index = list(range(batch_size))
+        # # Without teacher forcing: use its own predictions as the next input
+        # target_lengths_numpy = target_lengths.cpu().numpy()
+        # sent_not_end_index = list(range(batch_size))
+        # decoding_token_index = 0
+        # while len(sent_not_end_index) > 0:
+        #     decoder_output, decoder_hidden, decoder_attention_weights = decoder(
+        #         decoder_input, decoder_hidden, input_lengths, encoder_outputs)
+        #     topv, topi = decoder_output.topk(1)
+        #     decoder_input = topi.detach()  # detach from history as input
+        #     #print(type(sent_not_end_index[0]))
+        #     sent_not_end_index = torch.LongTensor(sent_not_end_index).to(device)
+        #     loss += criterion(decoder_output.index_select(0,sent_not_end_index), 
+        #                       target_tensor[:,decoding_token_index].index_select(0,sent_not_end_index))
+        #     decoding_token_index += 1
+        #     end_or_not = target_lengths_numpy > decoding_token_index
+        #     #(target_lengths_numpy > decoding_token_index)*(decoder_input.squeeze().numpy() != EOS_token)
+        #     sent_not_end_index = list(np.where(end_or_not)[0])
+        ### simple version
         decoding_token_index = 0
-        while len(sent_not_end_index) > 0:
+        tgt_max_len_batch = target_lengths.cpu().max().item()
+        assert(tgt_max_len_batch==target_tensor.size(1))
+        while decoding_token_index < tgt_max_len_batch
             decoder_output, decoder_hidden, decoder_attention_weights = decoder(
                 decoder_input, decoder_hidden, input_lengths, encoder_outputs)
             topv, topi = decoder_output.topk(1)
             decoder_input = topi.detach()  # detach from history as input
-            #print(type(sent_not_end_index[0]))
-            sent_not_end_index = torch.LongTensor(sent_not_end_index).to(device)
-            loss += criterion(decoder_output.index_select(0,sent_not_end_index), 
-                              target_tensor[:,decoding_token_index].index_select(0,sent_not_end_index))
+            loss += criterion(decoder_output, target_tensor[:,decoding_token_index])
             decoding_token_index += 1
-            end_or_not = target_lengths_numpy > decoding_token_index
-            #(target_lengths_numpy > decoding_token_index)*(decoder_input.squeeze().numpy() != EOS_token)
-            sent_not_end_index = list(np.where(end_or_not)[0])
+
     
     # average loss        
-    loss = torch.div(loss, target_lengths.type_as(loss).mean())
+    #target_lengths.type_as(loss).mean()
+    loss = torch.div(loss, target_lengths.type_as(loss).max())
     loss.backward()
 
     ### TODO
@@ -198,7 +220,7 @@ def start_train(transtype, paras):
     srcLang.load_embedding(address_book['src_emb'], src_vocab_size)
     tgtLang = Lang('tgt')
     tgtLang.load_embedding(address_book['tgt_emb'], tgt_vocab_size)
-    train_input_index = text2index(train_src, srcLang.word2index)
+    train_input_index = text2index(train_src, srcLang.word2index) #add EOS token here 
     train_output_index = text2index(train_tgt, tgtLang.word2index)
     val_input_index = text2index(val_src, srcLang.word2index)
     val_output_index = text2index(val_tgt, tgtLang.word2index)
