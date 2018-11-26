@@ -12,7 +12,7 @@ from Multilayers_Encoder import EncoderRNN
 from Multilayers_Decoder import DecoderRNN, DecoderAtten
 from config import *
 import random
-from evaluation import evaluate, evaluate_batch
+from evaluation import evaluate_batch
 
 
 ####################Define Global Variable#########################
