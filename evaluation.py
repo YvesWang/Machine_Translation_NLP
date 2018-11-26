@@ -6,7 +6,13 @@ from config import SOS_token, EOS_token
 import sacrebleu
 
 def fun_index2token(index_list, idx2words):
-    return [idx2words[index] for index in index_list]
+    token_list = []
+    for index in index_list:
+        if index == EOS_token:
+            break
+        else:
+            token_list.append(idx2words[index])
+    return token_list
 
 def evaluate(loader, encoder, decoder, criterion, tgt_max_length, tgt_idx2words):
     """
