@@ -8,8 +8,8 @@ from torch.utils.data import Dataset, DataLoader
 from torch.nn.utils.rnn import pad_packed_sequence, pack_padded_sequence
 from Data_utils import VocabDataset, vocab_collate_func
 from preprocessing_util import preposs_toekn, read_embedding, Lang, text2index, preparelang
-from Encoder import EncoderRNN
-from Decoder import DecoderRNN, DecoderAtten
+from Multilayers_Encoder import EncoderRNN
+from Multilayers_Decoder import DecoderRNN, DecoderAtten
 from config import *
 import random
 from evaluation import evaluate, evaluate_batch
@@ -39,7 +39,8 @@ def train(input_tensor, input_lengths, target_tensor, target_lengths,
 
     encoder_outputs, encoder_hidden = encoder(input_tensor, encoder_hidden, input_lengths)
     decoder_input = torch.tensor([[SOS_token]*batch_size], device=device).transpose(0,1)
-    decoder_hidden = encoder_hidden
+    decoder_hidden = decoder.initHidden(encoder_hidden)
+    #print(decoder_hidden.size())
     #print('encoddddddddddder finishhhhhhhhhhhhhhh')
     use_teacher_forcing = True if random.random() < teacher_forcing_ratio else False
 
@@ -117,13 +118,13 @@ def trainIters(train_loader, val_loader, encoder, decoder, num_epochs,
             loss = train(input_tensor, input_lengths, target_tensor, target_lengths, 
                          encoder, decoder, encoder_optimizer, decoder_optimizer, 
                          criterion, teacher_forcing_ratio)
-            if n_iter % 500 == 0:
-                #print()
+            if n_iter % 60 == 0:
+                print('Loss:', loss)
                 #eva_start = time.time()
-                val_bleu_sacre, val_bleu_nltk, val_loss = evaluate_batch(val_loader, encoder, decoder, criterion, tgt_max_length, tgtLang.index2word)
+                #val_bleu_sacre, val_bleu_nltk, val_loss = evaluate_batch(val_loader, encoder, decoder, criterion, tgt_max_length, tgtLang.index2word)
                 #print((time.time()-eva_start)/60)
-                print('epoch: [{}/{}], step: [{}/{}], train_loss:{}, val_bleu_sacre: {}, val_bleu_nltk: {}, val_loss: {}'.format(
-                    epoch, num_epochs, n_iter, len(train_loader), loss, val_bleu_sacre[0], val_bleu_nltk, val_loss))
+                #print('epoch: [{}/{}], step: [{}/{}], train_loss:{}, val_bleu_sacre: {}, val_bleu_nltk: {}, val_loss: {}'.format(
+                 #   epoch, num_epochs, n_iter, len(train_loader), loss, val_bleu_sacre[0], val_bleu_nltk, val_loss))
                # for p in decoder.parameters():
                #     print('Decoder grad mean:')
                #     print(p.grad.data.abs().mean().item(), end=' ')
@@ -134,8 +135,8 @@ def trainIters(train_loader, val_loader, encoder, decoder, num_epochs,
                #     print('----------')
         val_bleu_sacre, val_bleu_nltk, val_loss = evaluate_batch(val_loader, encoder, decoder, criterion, tgt_max_length, tgtLang.index2word)
         print('epoch: [{}/{}] (Running time {:.6f} min), val_bleu_sacre: {}, val_bleu_nltk: {}, val_loss: {}'.format(epoch, num_epochs, (time.time()-start_time)/60, val_bleu_sacre, val_bleu_nltk, val_loss))
-        if max_val_bleu < val_bleu_sacre:
-            max_val_bleu = val_bleu_sacre
+        if max_val_bleu < val_bleu_sacre.score:
+            max_val_bleu = val_bleu_sacre.score
             ### TODO save best model
         if epoch % model_save_info['epochs_per_save_model'] == 0:
             check_point_state = {
@@ -154,6 +155,7 @@ def start_train(transtype, paras):
     teacher_forcing_ratio = paras['teacher_forcing_ratio']
     emb_size = paras['emb_size']
     hidden_size = paras['hidden_size']
+    num_layers = paras['num_layers']
     num_direction = paras['num_direction']
     learning_rate = paras['learning_rate']
     num_epochs = paras['num_epochs']
@@ -209,7 +211,7 @@ def start_train(transtype, paras):
 
     val_dataset = VocabDataset(val_input_index,val_output_index)
     val_loader = torch.utils.data.DataLoader(dataset=val_dataset,
-                                            batch_size=1,
+                                            batch_size=batch_size,
                                             collate_fn=vocab_collate_func,
                                             shuffle=False)
 
@@ -223,11 +225,11 @@ def start_train(transtype, paras):
     embedding_tgt_weight = torch.from_numpy(tgtLang.embedding_matrix).to(device)
     print(embedding_src_weight.size(), embedding_tgt_weight.size())
     if attention_type:
-        encoder = EncoderRNN(src_vocab_size, emb_size, hidden_size, num_direction, embedding_weight = embedding_src_weight, device = device)
-        decoder = DecoderAtten(emb_size, hidden_size, tgt_vocab_size, num_direction, embedding_weight = embedding_tgt_weight, atten_type = attention_type, device = device)
+        encoder = EncoderRNN(src_vocab_size, emb_size, hidden_size, num_layers, num_direction, embedding_weight = embedding_src_weight, device = device)
+        decoder = DecoderAtten(emb_size, hidden_size, tgt_vocab_size, num_layers, num_direction, embedding_weight = embedding_tgt_weight, atten_type = attention_type, device = device)
     else:      
-        encoder = EncoderRNN(src_vocab_size, emb_size,hidden_size,num_direction, embedding_weight = embedding_src_weight, device = device)
-        decoder = DecoderRNN(emb_size, hidden_size, tgt_vocab_size, num_direction, embedding_weight = embedding_tgt_weight, device = device)
+        encoder = EncoderRNN(src_vocab_size, emb_size,hidden_size, num_layers, num_direction, embedding_weight = embedding_src_weight, device = device)
+        decoder = DecoderRNN(emb_size, hidden_size, tgt_vocab_size, num_layers, num_direction, embedding_weight = embedding_tgt_weight, device = device)
     
     encoder, decoder = encoder.to(device), decoder.to(device)
     print('Encoder:')
@@ -243,14 +245,15 @@ if __name__ == "__main__":
         teacher_forcing_ratio = 0,
         emb_size = 300,
         hidden_size = 100,
+        num_layers = 2,
         num_direction = 2,
         learning_rate = 1e-4,
         num_epochs = 60,
-        batch_size = 32, 
+        batch_size = 100, 
         attention_type = None, # None, dot_prod, general, concat
 
         model_save_info = dict(
-            model_path = 'nmt_models/model_test/',
+            model_path = 'nmt_models/model_test/para221e4/',
             epochs_per_save_model = 10,
             model_path_for_resume = None #'nmt_models/epoch_0.pth'
             )
