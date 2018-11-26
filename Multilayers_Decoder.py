@@ -62,9 +62,9 @@ class DecoderAtten(nn.Module):
     
     def initHidden(self, encoder_hidden):
         batch_size = encoder_hidden.size(1)
-        return encoder_hidden.expand(self.num_layers,batch_size, self.hidden_size
+        return encoder_hidden.expand(self.num_layers,batch_size, self.hidden_size).contiguous()
 
-)
+
 class AttentionLayer(nn.Module):
     def __init__(self, hidden_size, atten_type):
         super(AttentionLayer, self).__init__()
