@@ -7,7 +7,7 @@ from torch import optim
 from torch.utils.data import Dataset, DataLoader
 from torch.nn.utils.rnn import pad_packed_sequence, pack_padded_sequence
 from Data_utils import VocabDataset, vocab_collate_func
-from preprocessing_util import preposs_toekn, read_embedding, Lang, text2index, preparelang
+from preprocessing_util import preposs_toekn, Lang, text2index, construct_Lang
 from Multilayers_Encoder import EncoderRNN
 from Multilayers_Decoder import DecoderRNN, DecoderAtten
 from config import *
@@ -216,10 +216,12 @@ def start_train(transtype, paras):
 
     print('The number of train samples: ', len(train_src))
     print('The number of val samples: ', len(val_src))
-    srcLang = Lang('src')
-    srcLang.load_embedding(address_book['src_emb'], src_vocab_size)
-    tgtLang = Lang('tgt')
-    tgtLang.load_embedding(address_book['tgt_emb'], tgt_vocab_size)
+    # srcLang = Lang('src')
+    # srcLang.load_embedding(address_book['src_emb'], src_vocab_size)
+    # tgtLang = Lang('tgt')
+    # tgtLang.load_embedding(address_book['tgt_emb'], tgt_vocab_size)
+    srcLang = construct_Lang('src', src_vocab_size, address_book['src_emb'], train_src)
+    tgtLang = construct_Lang('tgt', tgt_vocab_size, address_book['tgt_emb'], train_tgt)
     train_input_index = text2index(train_src, srcLang.word2index) #add EOS token here 
     train_output_index = text2index(train_tgt, tgtLang.word2index)
     val_input_index = text2index(val_src, srcLang.word2index)
@@ -247,11 +249,11 @@ def start_train(transtype, paras):
     embedding_tgt_weight = torch.from_numpy(tgtLang.embedding_matrix).to(device)
     print(embedding_src_weight.size(), embedding_tgt_weight.size())
     if attention_type:
-        encoder = EncoderRNN(src_vocab_size, emb_size, hidden_size, num_layers, num_direction, embedding_weight = embedding_src_weight, device = device)
-        decoder = DecoderAtten(emb_size, hidden_size, tgt_vocab_size, num_layers, num_direction, embedding_weight = embedding_tgt_weight, atten_type = attention_type, device = device)
+        encoder = EncoderRNN(srcLang.vocab_size, emb_size, hidden_size, num_layers, num_direction, embedding_weight = embedding_src_weight, device = device)
+        decoder = DecoderAtten(emb_size, hidden_size, tgtLang.vocab_size, num_layers, num_direction, embedding_weight = embedding_tgt_weight, atten_type = attention_type, device = device)
     else:      
-        encoder = EncoderRNN(src_vocab_size, emb_size,hidden_size, num_layers, num_direction, embedding_weight = embedding_src_weight, device = device)
-        decoder = DecoderRNN(emb_size, hidden_size, tgt_vocab_size, num_layers, num_direction, embedding_weight = embedding_tgt_weight, device = device)
+        encoder = EncoderRNN(srcLang.vocab_size, emb_size,hidden_size, num_layers, num_direction, embedding_weight = embedding_src_weight, device = device)
+        decoder = DecoderRNN(emb_size, hidden_size, tgtLang.vocab_size, num_layers, num_direction, embedding_weight = embedding_tgt_weight, device = device)
     
     encoder, decoder = encoder.to(device), decoder.to(device)
     print('Encoder:')
@@ -279,7 +281,7 @@ if __name__ == "__main__":
             epochs_per_save_model = 10,
             model_path_for_resume = None #'nmt_models/epoch_0.pth'
             )
-    )
+        )
     print('paras: ', paras)
     start_train(transtype, paras)
 

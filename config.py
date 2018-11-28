@@ -10,6 +10,8 @@ SOS_token = 1
 EOS_token = 2
 UNK_token = 3
 
+vocab_prefix = ['<PAD>', '<SOS>', '<EOS>', '<UNK>']
+
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
 address_book1 = dict(
