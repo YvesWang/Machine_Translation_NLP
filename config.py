@@ -25,8 +25,8 @@ address_book1 = dict(
 )
 
 address_book1 = dict(
-    train_src = 'Data/news_token_zh_en.zh',
-    train_tgt = 'Data/news_token_zh_en_nltk.en',
+    train_src = 'Machine_Translation_NLP/iwsltzhen/iwslt-zh-en/train.tok.zh',
+    train_tgt = 'Machine_Translation_NLP/iwsltzhen/iwslt-zh-en/train.tok.en',
     val_src = 'Machine_Translation_NLP/iwsltzhen/iwslt-zh-en/dev.tok.zh',
     val_tgt = 'Machine_Translation_NLP/iwsltzhen/iwslt-zh-en/dev.tok.en',
     src_emb = 'embedding/wiki.zh.vec',
@@ -45,8 +45,8 @@ address_book = dict(
 address_book1 = dict(
     train_src = 'Data/src_tokens',
     train_tgt = 'Data/tgt_tokens',
-    val_src = 'Data/src_tokens',
-    val_tgt = 'Data/tgt_tokens',
+    val_src = 'Machine_Translation_NLP/iwsltzhen/iwslt-zh-en/dev.tok.zh',
+    val_tgt = 'Machine_Translation_NLP/iwsltzhen/iwslt-zh-en/dev.tok.en',
     src_emb = 'embedding/wiki.zh.vec',
     tgt_emb = 'embedding/wiki.en.vec'
 )

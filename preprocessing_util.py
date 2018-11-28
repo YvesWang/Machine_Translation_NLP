@@ -1,15 +1,17 @@
 import numpy as np
 from config import *
-
+from collections import Counter
 
 def preposs_toekn(tokens):
     return [token for token in tokens if token != '']
 
-
-def load_emb_vectors(asttest_home):
+def load_emb_vectors(fasttest_home):
+    max_num_load = 500000
     words_dict = {}
     with open(fasttest_home) as f:
-        for line in f:
+        for num_row, line in enumerate(f):
+            if num_row >= max_num_load:
+                break
             s = line.split()
             words_dict[s[0]] = np.asarray(s[1:])
     return words_dict
@@ -64,22 +66,25 @@ class Lang:
         token_counter = Counter(all_tokens)
         print('The number of unique tokens totally in train data: ', len(token_counter))
         vocab, count = zip(*token_counter.most_common(self.max_vocab_size))
-        self.index2token = vocab_prefix + list(vocab)
-        token2index = dict(zip(vocab, range(len(vocab_prefix),len(vocab_prefix)+len(vocab)))) 
+        self.index2word = vocab_prefix + list(vocab)
+        word2index = dict(zip(vocab, range(len(vocab_prefix),len(vocab_prefix)+len(vocab)))) 
         for idx, token in enumerate(vocab_prefix):
-            token2index[token] = idx
-        self.token2index = token2index
+            word2index[token] = idx
+        self.word2index = word2index
         return None 
 
     def build_emb_weight(self):
         words_emb_dict = load_emb_vectors(self.emb_pretrained_add)
-        vocab_size = len(self.index2token)
+        vocab_size = len(self.index2word)
         self.vocab_size = vocab_size
         emb_weight = np.zeros([vocab_size, 300])
         for i in range(len(vocab_prefix), vocab_size):
-            emb = words_emb_dict.get(self.index2token[i], None)
+            emb = words_emb_dict.get(self.index2word[i], None)
             if emb is not None:
-                emb_weight[i] = emb
+                try:
+                    emb_weight[i] = emb
+                except:
+                    print(len(emb), self.index2word[i], emb)
         self.embedding_matrix = emb_weight
         return None
 

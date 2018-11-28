@@ -63,7 +63,7 @@ def train(input_tensor, input_lengths, target_tensor, target_lengths,
         decoding_token_index = 0
         tgt_max_len_batch = target_lengths.cpu().max().item()
         assert(tgt_max_len_batch==target_tensor.size(1))
-        while decoding_token_index < tgt_max_len_batch
+        while decoding_token_index < tgt_max_len_batch:
             decoder_output, decoder_hidden, decoder_attention = decoder(
                 decoder_input, decoder_hidden, input_lengths, encoder_outputs)
             loss += criterion(decoder_output, target_tensor[:,decoding_token_index])
@@ -93,7 +93,7 @@ def train(input_tensor, input_lengths, target_tensor, target_lengths,
         decoding_token_index = 0
         tgt_max_len_batch = target_lengths.cpu().max().item()
         assert(tgt_max_len_batch==target_tensor.size(1))
-        while decoding_token_index < tgt_max_len_batch
+        while decoding_token_index < tgt_max_len_batch:
             decoder_output, decoder_hidden, decoder_attention_weights = decoder(
                 decoder_input, decoder_hidden, input_lengths, encoder_outputs)
             topv, topi = decoder_output.topk(1)
@@ -140,27 +140,27 @@ def trainIters(train_loader, val_loader, encoder, decoder, num_epochs,
             loss = train(input_tensor, input_lengths, target_tensor, target_lengths, 
                          encoder, decoder, encoder_optimizer, decoder_optimizer, 
                          criterion, teacher_forcing_ratio)
-            if n_iter % 60 == 0:
-                print('Loss:', loss)
+            if n_iter % 500 == 0:
+                #print('Loss:', loss)
                 #eva_start = time.time()
-                #val_bleu_sacre, val_bleu_nltk, val_loss = evaluate_batch(val_loader, encoder, decoder, criterion, tgt_max_length, tgtLang.index2word)
+                val_bleu_sacre, val_bleu_nltk, val_loss = evaluate_batch(val_loader, encoder, decoder, criterion, tgt_max_length, tgtLang.index2word)
                 #print((time.time()-eva_start)/60)
-                #print('epoch: [{}/{}], step: [{}/{}], train_loss:{}, val_bleu_sacre: {}, val_bleu_nltk: {}, val_loss: {}'.format(
-                 #   epoch, num_epochs, n_iter, len(train_loader), loss, val_bleu_sacre[0], val_bleu_nltk, val_loss))
-               # for p in decoder.parameters():
-               #     print('Decoder grad mean:')
-               #     print(p.grad.data.abs().mean().item(), end=' ')
-               #     print('---------')
-               # for p in encoder.parameters():
-               #     print('Encoder grad mean:')
-               #     print(p.grad.data.abs().mean().item(), end=' ')
-               #     print('----------')
+                print('epoch: [{}/{}], step: [{}/{}], train_loss:{}, val_bleu_sacre: {}, val_bleu_nltk: {}, val_loss: {}'.format(
+                    epoch, num_epochs, n_iter, len(train_loader), loss, val_bleu_sacre[0], val_bleu_nltk, val_loss))
+               # print('Decoder parameters grad:')
+               # for p in decoder.named_parameters():
+               #     print(p[0], ': ',  p[1].grad.data.abs().mean().item(), p[1].grad.data.abs().max().item(), p[1].data.abs().mean().item(), p[1].data.abs().max().item(), end=' ')
+               # print('\n')
+               # print('Encoder Parameters grad:')
+               # for p in encoder.named_parameters():
+               #     print(p[0], ': ',  p[1].grad.data.abs().mean().item(), p[1].grad.data.abs().max().item(), p[1].data.abs().mean().item(), p[1].data.abs().max().item(), end=' ')
+               # print('\n')
         val_bleu_sacre, val_bleu_nltk, val_loss = evaluate_batch(val_loader, encoder, decoder, criterion, tgt_max_length, tgtLang.index2word)
         print('epoch: [{}/{}] (Running time {:.6f} min), val_bleu_sacre: {}, val_bleu_nltk: {}, val_loss: {}'.format(epoch, num_epochs, (time.time()-start_time)/60, val_bleu_sacre, val_bleu_nltk, val_loss))
         if max_val_bleu < val_bleu_sacre.score:
             max_val_bleu = val_bleu_sacre.score
             ### TODO save best model
-        if epoch % model_save_info['epochs_per_save_model'] == 0:
+        if (epoch+1) % model_save_info['epochs_per_save_model'] == 0:
             check_point_state = {
                 'epoch': epoch,
                 'encoder_state_dict': encoder.state_dict(),
@@ -185,6 +185,8 @@ def start_train(transtype, paras):
     attention_type = paras['attention_type']
     model_save_info = paras['model_save_info']
 
+    
+    print(address_book)
     train_src_add = address_book['train_src']
     train_tgt_add = address_book['train_tgt']
     val_src_add = address_book['val_src']
@@ -269,15 +271,15 @@ if __name__ == "__main__":
         teacher_forcing_ratio = 0,
         emb_size = 300,
         hidden_size = 100,
-        num_layers = 2,
+        num_layers = 1,
         num_direction = 2,
-        learning_rate = 1e-4,
+        learning_rate = 5*1e-4,
         num_epochs = 60,
         batch_size = 100, 
         attention_type = None, # None, dot_prod, general, concat
 
         model_save_info = dict(
-            model_path = 'nmt_models/model_test/para221e4/',
+            model_path = 'nmt_models/model1',
             epochs_per_save_model = 10,
             model_path_for_resume = None #'nmt_models/epoch_0.pth'
             )
