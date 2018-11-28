@@ -147,14 +147,14 @@ def trainIters(train_loader, val_loader, encoder, decoder, num_epochs,
                 #print((time.time()-eva_start)/60)
                 print('epoch: [{}/{}], step: [{}/{}], train_loss:{}, val_bleu_sacre: {}, val_bleu_nltk: {}, val_loss: {}'.format(
                     epoch, num_epochs, n_iter, len(train_loader), loss, val_bleu_sacre[0], val_bleu_nltk, val_loss))
-                print('Decoder parameters grad:')
-                for p in decoder.named_parameters():
-                    print(p[0], ': ',  p[1].grad.data.abs().mean().item(), p[1].grad.data.abs().max().item(), p[1].data.abs().mean().item(), p[1].data.abs().max().item(), end=' ')
-                print('\n')
-                print('Encoder Parameters grad:')
-                for p in encoder.named_parameters():
-                    print(p[0], ': ',  p[1].grad.data.abs().mean().item(), p[1].grad.data.abs().max().item(), p[1].data.abs().mean().item(), p[1].data.abs().max().item(), end=' ')
-                print('\n')
+               # print('Decoder parameters grad:')
+               # for p in decoder.named_parameters():
+               #     print(p[0], ': ',  p[1].grad.data.abs().mean().item(), p[1].grad.data.abs().max().item(), p[1].data.abs().mean().item(), p[1].data.abs().max().item(), end=' ')
+               # print('\n')
+               # print('Encoder Parameters grad:')
+               # for p in encoder.named_parameters():
+               #     print(p[0], ': ',  p[1].grad.data.abs().mean().item(), p[1].grad.data.abs().max().item(), p[1].data.abs().mean().item(), p[1].data.abs().max().item(), end=' ')
+               # print('\n')
         val_bleu_sacre, val_bleu_nltk, val_loss = evaluate_batch(val_loader, encoder, decoder, criterion, tgt_max_length, tgtLang.index2word)
         print('epoch: [{}/{}] (Running time {:.6f} min), val_bleu_sacre: {}, val_bleu_nltk: {}, val_loss: {}'.format(epoch, num_epochs, (time.time()-start_time)/60, val_bleu_sacre, val_bleu_nltk, val_loss))
         if max_val_bleu < val_bleu_sacre.score:
