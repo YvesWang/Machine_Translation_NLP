@@ -63,7 +63,7 @@ def train(input_tensor, input_lengths, target_tensor, target_lengths,
         decoding_token_index = 0
         tgt_max_len_batch = target_lengths.cpu().max().item()
         assert(tgt_max_len_batch==target_tensor.size(1))
-        while decoding_token_index < tgt_max_len_batch
+        while decoding_token_index < tgt_max_len_batch:
             decoder_output, decoder_hidden, decoder_attention = decoder(
                 decoder_input, decoder_hidden, input_lengths, encoder_outputs)
             loss += criterion(decoder_output, target_tensor[:,decoding_token_index])
@@ -93,7 +93,7 @@ def train(input_tensor, input_lengths, target_tensor, target_lengths,
         decoding_token_index = 0
         tgt_max_len_batch = target_lengths.cpu().max().item()
         assert(tgt_max_len_batch==target_tensor.size(1))
-        while decoding_token_index < tgt_max_len_batch
+        while decoding_token_index < tgt_max_len_batch:
             decoder_output, decoder_hidden, decoder_attention_weights = decoder(
                 decoder_input, decoder_hidden, input_lengths, encoder_outputs)
             topv, topi = decoder_output.topk(1)
@@ -185,6 +185,8 @@ def start_train(transtype, paras):
     attention_type = paras['attention_type']
     model_save_info = paras['model_save_info']
 
+    
+    print(address_book)
     train_src_add = address_book['train_src']
     train_tgt_add = address_book['train_tgt']
     val_src_add = address_book['val_src']
@@ -275,7 +277,7 @@ if __name__ == "__main__":
         attention_type = None, # None, dot_prod, general, concat
 
         model_save_info = dict(
-            model_path = 'nmt_models/model_test/para221e4/',
+            model_path = 'nmt_models/model1',
             epochs_per_save_model = 10,
             model_path_for_resume = None #'nmt_models/epoch_0.pth'
             )
