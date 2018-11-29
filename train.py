@@ -247,8 +247,8 @@ def start_train(transtype, paras):
     #                                            collate_fn=vocab_collate_func,
     #                                            shuffle=False)
 
-    embedding_src_weight = torch.from_numpy(srcLang.embedding_matrix).to(device)
-    embedding_tgt_weight = torch.from_numpy(tgtLang.embedding_matrix).to(device)
+    embedding_src_weight = torch.from_numpy(srcLang.embedding_matrix).type(torch.FloatTensor).to(device)
+    embedding_tgt_weight = torch.from_numpy(tgtLang.embedding_matrix).type(torch.FloatTensor).to(device)
     print(embedding_src_weight.size(), embedding_tgt_weight.size())
     if attention_type:
         encoder = EncoderRNN(srcLang.vocab_size, emb_size, hidden_size, num_layers, num_direction, embedding_weight = embedding_src_weight, device = device)
