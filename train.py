@@ -12,8 +12,7 @@ from Multilayers_Encoder import EncoderRNN
 from Multilayers_Decoder import DecoderRNN, DecoderAtten
 from config import *
 import random
-from evaluation import evaluate_batch
-
+from evaluation import evaluate_batch, evaluate_beam_batch
 
 ####################Define Global Variable#########################
 
@@ -116,7 +115,7 @@ def train(input_tensor, input_lengths, target_tensor, target_lengths,
 
 
 def trainIters(train_loader, val_loader, encoder, decoder, num_epochs, 
-               learning_rate, teacher_forcing_ratio, srcLang, tgtLang, model_save_info):
+               learning_rate, teacher_forcing_ratio, srcLang, tgtLang, model_save_info, beam_size):
 
     encoder_optimizer = optim.Adam(encoder.parameters(), lr=learning_rate)
     decoder_optimizer = optim.Adam(decoder.parameters(), lr=learning_rate)
@@ -156,7 +155,9 @@ def trainIters(train_loader, val_loader, encoder, decoder, num_epochs,
                #     print(p[0], ': ',  p[1].grad.data.abs().mean().item(), p[1].grad.data.abs().max().item(), p[1].data.abs().mean().item(), p[1].data.abs().max().item(), end=' ')
                # print('\n')
         val_bleu_sacre, val_bleu_nltk, val_loss = evaluate_batch(val_loader, encoder, decoder, criterion, tgt_max_length, tgtLang.index2word)
-        print('epoch: [{}/{}] (Running time {:.6f} min), val_bleu_sacre: {}, val_bleu_nltk: {}, val_loss: {}'.format(epoch, num_epochs, (time.time()-start_time)/60, val_bleu_sacre, val_bleu_nltk, val_loss))
+        print('epoch: [{}/{}] (Running time {:.3f} min), val_bleu_sacre: {}, val_bleu_nltk: {}, val_loss: {}'.format(epoch, num_epochs, (time.time()-start_time)/60, val_bleu_sacre, val_bleu_nltk, val_loss))
+        val_bleu_sacre_beam, _, _ = evaluate_beam_batch(beam_size, val_loader, encoder, decoder, criterion, tgt_max_length, tgt_index2word)
+        print('epoch: [{}/{}] (Running time {:.3f} min), val_bleu_sacre_beam: {}'.format(epoch, num_epochs, (time.time()-start_time)/60, val_bleu_sacre_beam))
         if max_val_bleu < val_bleu_sacre.score:
             max_val_bleu = val_bleu_sacre.score
             ### TODO save best model
@@ -183,6 +184,7 @@ def start_train(transtype, paras):
     num_epochs = paras['num_epochs']
     batch_size = paras['batch_size']
     attention_type = paras['attention_type']
+    beam_size = paras['beam_size']
     model_save_info = paras['model_save_info']
 
     
@@ -264,7 +266,7 @@ def start_train(transtype, paras):
     print(encoder)
     print('Decoder:')
     print(decoder)
-    trainIters(train_loader, val_loader, encoder, decoder, num_epochs, learning_rate, teacher_forcing_ratio, srcLang, tgtLang, model_save_info)
+    trainIters(train_loader, val_loader, encoder, decoder, num_epochs, learning_rate, teacher_forcing_ratio, srcLang, tgtLang, model_save_info, beam_size)
     
 
 if __name__ == "__main__":
@@ -279,6 +281,7 @@ if __name__ == "__main__":
         num_epochs = 60,
         batch_size = 100, 
         attention_type = None, # None, dot_prod, general, concat
+        beam_size = 1,
 
         model_save_info = dict(
             model_path = 'nmt_models/model2',

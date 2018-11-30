@@ -2,8 +2,9 @@
 import torch
 import numpy as np
 from nltk.translate import bleu_score 
-from config import SOS_token, EOS_token
+from config import SOS_token, EOS_token, PAD_token
 import sacrebleu
+import beam
 
 def fun_index2token(index_list, idx2words):
     token_list = []
@@ -67,7 +68,83 @@ def evaluate_batch(loader, encoder, decoder, criterion, tgt_max_length, tgt_idx2
     sacre_bleu_score = sacrebleu.corpus_bleu(tgt_pred_sents_sacre, [tgt_sents_sacre], smooth='exp', smooth_floor=0.0, force=False, lowercase=False,
         tokenize='none', use_effective_order=True)
     loss = np.mean(loss_all)
+    if True:
+        random_sample = np.random.randint(len(tgt_pred_sents_sacre))
+        print('Ref: ', tgt_sents_sacre[random_sample])
+        print('pred: ', tgt_pred_sents_sacre[random_sample])
     return sacre_bleu_score, None, loss
+
+def evaluate_beam_batch(beam_size, loader, encoder, decoder, criterion, tgt_max_length, tgt_idx2words):
+    """
+    """
+    device = torch.device("cuda" if torch.cuda.is_available() else "cpu")    
+    #loss_all = []
+    #tgt_sents_nltk = []
+    tgt_sents_sacre = []
+    #tgt_pred_sents_nltk = []
+    tgt_pred_sents_sacre = []
+    with torch.no_grad():
+        for input_tensor, input_lengths, target_tensor, target_lengths in loader:
+            batch_size = input_tensor.size(0).item() #int 
+            encoder_hidden = encoder.initHidden(batch_size)
+            encoder_outputs, encoder_hidden = encoder(input_tensor, encoder_hidden, input_lengths)
+
+            beamers = [beam(beam_size, min_length=0, n_best=1) for i in range(batch_size)]
+            encoder_max_len, decoder_hidden_dim = encoder_outputs.size(1).item(), encoder_outputs.size(2).item() #int
+            assert(encoder_max_len==input_lengths.max())
+            encoder_hiddden_beam = encoder_hidden.unsqueeze(2).expand(1, batch_size, beam_size, decoder_hidden_dim).view(1, batch_size*beam_size, decoder_hidden_dim)
+            decoder_hidden = encoder_hiddden_beam
+            input_lengths_beam = input_lengths.unsqueeze(1).expand(batch_size, beam_size).view(batch_size*beam_size)
+            encoder_outputs_beam = encoder_outputs.unsqueeze(1).expand(batch_size, beam_size, encoder_max_len, decoder_hidden_dim).view(batch_size*beam_size, 
+                encoder_max_len, decoder_hidden_dim)
+
+            #loss = 0
+            while True:
+                decoder_input = torch.stack([beamer.next_ts[-1] for beamer in beamers], dim=0).unsqueeze(-1).view(batch_size*beam_size, 1)
+                decoder_output, decoder_hidden, _ = decoder(decoder_input, decoder_hidden, input_lengths_beam, encoder_outputs_beam)
+                decoder_output_beam, decoder_hidden_beam = decoder_output.view(batch_size, beam_size, vocab_size), decoder_hidden.view(1, 
+                    batch_size, beam_size, decoder_hidden_dim)
+                decoder_input_list = []
+                decoder_hidden_list = []
+                flag_stop = True
+                for i_batch in range(batch_size):
+                    beamer = beamers[i_batch]
+                    if beamer.stopByEOS == False:
+                        beamer.advance(decoder_output_beam[i_batch])
+                        decoder_hidden_list.append(decoder_hidden_beam[:, i_batch, :, :].index_select(dim=1, beamer.prev_ps[-1]))
+                        decoder_input_list.append(beamer.next_ts[-1])
+                        flag_stop = False
+                    else:
+                        decoder_hidden_list.append(decoder_hidden_beam[:,i_batch,:,:])
+                        decoder_input_list.append(torch.LongTensor(beam_size).fill_(PAD_token))
+                if flag_stop:
+                    break
+                decoder_input = torch.stack(decoder_input_list, 0).view(batch_size*beam_size, 1)
+                decoder_hidden = torch.stack(decoder_hidden_list, 1).view(1, batch_size*beam_size, decoder_hidden_dim)
+
+            target_tensor_numpy = target_tensor.cpu().numpy()
+            for i_batch in range(batch_size):
+                beamer = beamers[i_batch]
+                paths_sort = sorted(beamer.finish_paths, key=lambda x: x[0], reverse=True)
+                best_path = paths_sort[0]
+                score_best_path, tokens_best_path = beamer.get_pred_sentence(best_path)
+                # ground true
+                tgt_sent_tokens = fun_index2token(target_tensor_numpy[i_batch].tolist(), tgt_idx2words)
+                tgt_sents_sacre.append(' '.join(tgt_sent_tokens))
+                # prediction
+                tgt_pred_sent_tokens = fun_index2token(tokens_best_path, tgt_idx2words)
+                tgt_pred_sents_sacre.append(' '.join(tgt_pred_sent_tokens))
+
+    #nltk_bleu_score = bleu_score.corpus_bleu(tgt_sents_nltk, tgt_pred_sents_nltk)
+    sacre_bleu_score = sacrebleu.corpus_bleu(tgt_pred_sents_sacre, [tgt_sents_sacre], smooth='exp', smooth_floor=0.0, force=False, lowercase=False,
+        tokenize='none', use_effective_order=True)
+    if True:
+        random_sample = np.random.randint(len(tgt_pred_sents_sacre))
+        print('Ref: ', tgt_sents_sacre[random_sample])
+        print('pred: ', tgt_pred_sents_sacre[random_sample])
+    return sacre_bleu_score, None, None
+
+
 
 def evaluate_single(data, encoder, decoder, criterion, tgt_max_length, tgt_idx2words):
     """
@@ -173,5 +250,4 @@ def evaluate_single(data, encoder, decoder, criterion, tgt_max_length, tgt_idx2w
 #     sacre_bleu_score = sacrebleu.corpus_bleu(tgt_pred_sents_sacre, [tgt_sents_sacre], smooth='exp', smooth_floor=0.0, force=False, lowercase=False,
 #         tokenize='none', use_effective_order=True)
 #     loss = np.mean(loss_all)
-
-    return sacre_bleu_score[0], nltk_bleu_score*100, loss
+#     return sacre_bleu_score[0], nltk_bleu_score*100, loss
