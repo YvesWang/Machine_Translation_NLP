@@ -104,7 +104,7 @@ def train(input_tensor, input_lengths, target_tensor, target_lengths,
     
     # average loss        
     #target_lengths.type_as(loss).mean()
-    loss = torch.div(loss, target_lengths.type_as(loss).max())
+    loss = torch.div(loss, target_lengths.type_as(loss).mean())
     loss.backward()
 
     ### TODO
@@ -128,7 +128,7 @@ def trainIters(train_loader, val_loader, encoder, decoder, num_epochs,
         decoder.load_state_dict(check_point_state['decoder_state_dict'])
         decoder_optimizer.load_state_dict(check_point_state['decoder_optimizer_state_dict'])
 
-    criterion = nn.NLLLoss()
+    criterion = nn.NLLLoss(ignore_index=PAD_token)
     max_val_bleu = 0
 
     for epoch in range(num_epochs): 
@@ -195,6 +195,7 @@ def start_train(transtype, paras):
     # make dir for saving models
     if not os.path.exists(model_save_info['model_path']):
         os.makedirs(model_save_info['model_path'])
+    ### save model hyperparameters
 
     train_src = []
     with open(train_src_add) as f:
@@ -228,7 +229,8 @@ def start_train(transtype, paras):
     train_output_index = text2index(train_tgt, tgtLang.word2index)
     val_input_index = text2index(val_src, srcLang.word2index)
     val_output_index = text2index(val_tgt, tgtLang.word2index)
-    
+    ### save srcLang and tgtLang
+
     train_dataset = VocabDataset(train_input_index,train_output_index)
     train_loader = torch.utils.data.DataLoader(dataset=train_dataset,
                                                batch_size=batch_size,
@@ -279,7 +281,7 @@ if __name__ == "__main__":
         attention_type = None, # None, dot_prod, general, concat
 
         model_save_info = dict(
-            model_path = 'nmt_models/model1',
+            model_path = 'nmt_models/model2',
             epochs_per_save_model = 10,
             model_path_for_resume = None #'nmt_models/epoch_0.pth'
             )
