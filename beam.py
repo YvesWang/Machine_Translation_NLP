@@ -10,7 +10,7 @@ class beam:
 		# backpointers at each step
 		self.prev_ps = []
 		# next predicted token at each step
-		self.next_ts = [torch.LongTensor(size).fill_(PAD_token)]
+		self.next_ts = [torch.LongTensor(size).fill_(PAD_token).to(device)]
 		self.next_ts[0][0] = SOS_token
 		# score for each path on the beam
 		self.scores = torch.zeros(size, dtype=torch.float, device = device)
@@ -33,7 +33,7 @@ class beam:
 		if cur_len == 0:
 			step_scores = words_probs[0]
 		else:
-			step_scores = words_probs + self.scores.unsqueeze(1).expand_as(word_probs)
+			step_scores = words_probs + self.scores.unsqueeze(1).expand_as(words_probs)
 		step_scores_flatten = step_scores.view(-1)
 		best_scores, best_scores_tokenId = step_scores_flatten.topk(self.size)
 		self.scores = best_scores
@@ -48,7 +48,7 @@ class beam:
 
 		for k in range(self.size):
 			if next_token[k] == EOS_token:
-				self.finish_paths.append((best_scores[k], len(prev_ps), k))
+				self.finish_paths.append((best_scores[k], len(self.prev_ps), k))
 
 		return None
 
