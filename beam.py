@@ -20,45 +20,45 @@ class beam:
 		self.finish_paths = [] # all paths from the beam
 		self.stopByEOS = False
 
-		def advance(self, words_probs):
-			'''
-			words_probs: k*vocab_size
-			'''
-			vocab_size = words_probs.size(1)
-			cur_len = len(self.prev_ps)
-			if cur_len < self.min_length:
-				for i in range(words_probs.size(0).item()):
-					words_probs[i, EOS_token] = -1e20
+	def advance(self, words_probs):
+		'''
+		words_probs: k*vocab_size
+		'''
+		vocab_size = words_probs.size(1)
+		cur_len = len(self.prev_ps)
+		if cur_len < self.min_length:
+			for i in range(words_probs.size(0).item()):
+				words_probs[i, EOS_token] = -1e20
 
-			if cur_len == 0:
-				step_scores = words_probs[0]
-			else:
-				step_scores = words_probs + self.scores.unsqueeze(1).expand_as(word_probs)
-			step_scores_flatten = step_scores.view(-1)
-			best_scores, best_scores_tokenId = step_scores_flatten.topk(self.size)
-			self.scores = best_scores
-			
-			prev_step = best_scores_tokenId/vocab_size
-			self.prev_ps.append(prev_step)
-			self.next_ts.append(best_scores_tokenId - prev_step*vocab_size)
+		if cur_len == 0:
+			step_scores = words_probs[0]
+		else:
+			step_scores = words_probs + self.scores.unsqueeze(1).expand_as(word_probs)
+		step_scores_flatten = step_scores.view(-1)
+		best_scores, best_scores_tokenId = step_scores_flatten.topk(self.size)
+		self.scores = best_scores
+		
+		prev_step = best_scores_tokenId/vocab_size
+		self.prev_ps.append(prev_step)
+		self.next_ts.append(best_scores_tokenId - prev_step*vocab_size)
 
-			next_token = self.next_ts[-1]
-			if next_token[0] == EOS_token:
-				self.stopByEOS = True
+		next_token = self.next_ts[-1]
+		if next_token[0] == EOS_token:
+			self.stopByEOS = True
 
-			for k in range(self.size):
-				if next_token[k] == EOS_token:
-					self.finish_paths.append((best_scores[k], len(prev_ps), k))
+		for k in range(self.size):
+			if next_token[k] == EOS_token:
+				self.finish_paths.append((best_scores[k], len(prev_ps), k))
 
-			return None
+		return None
 
-		def get_pred_sentence(self, sent_info):
-			score, step_stop, path_idx = sent_info
-			sent_token = []
-			for i in range(step_stop-1, -1, -1):
-				sent_token.append(self.next_ts[i+1][path_idx].item())
-				path_idx = self.prev_ps[i][path_idx]
-			return score, sent_token[::-1]
+	def get_pred_sentence(self, sent_info):
+		score, step_stop, path_idx = sent_info
+		sent_token = []
+		for i in range(step_stop-1, -1, -1):
+			sent_token.append(self.next_ts[i+1][path_idx].item())
+			path_idx = self.prev_ps[i][path_idx]
+		return score, sent_token[::-1]
 		
 
 
