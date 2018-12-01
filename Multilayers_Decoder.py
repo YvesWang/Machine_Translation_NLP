@@ -35,6 +35,7 @@ class DecoderAtten(nn.Module):
         super(DecoderAtten, self).__init__()
         hidden_size = hidden_size * num_encoder_direction
         self.hidden_size = hidden_size
+        self.dropout_rate = 0.1
         self.num_layers = num_layers
         if embedding_weight is not None:
             self.embedding = nn.Embedding.from_pretrained(embedding_weight, freeze = False)
@@ -49,13 +50,14 @@ class DecoderAtten(nn.Module):
 
     def forward(self, tgt_input, hidden, true_len, encoder_outputs):
         output = self.embedding(tgt_input)
+        output = F.dropout(output, p=self.dropout_rate, training=True)
         #print(output.size())
         output, hidden = self.gru(output, hidden)
         ### add attention
         atten_output, atten_weight = self.atten(output, encoder_outputs, true_len)
         out1 = torch.cat((output,atten_output),-1)
         out2 = self.linear(out1.squeeze(1))
-        out2 = torch.tanh(out2)
+        out2 = F.relu(out2)
         logits = self.out(out2)
         output = self.logsoftmax(logits)
         return output, hidden, atten_weight

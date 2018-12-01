@@ -272,7 +272,7 @@ def start_train(transtype, paras):
 if __name__ == "__main__":
     transtype = 'zh2en'
     paras = dict( 
-        teacher_forcing_ratio = 0,
+        teacher_forcing_ratio = 1,
         emb_size = 300,
         hidden_size = 100,
         num_layers = 1,

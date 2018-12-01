@@ -6,6 +6,7 @@ class EncoderRNN(nn.Module):
     def __init__(self, vocab_size, embed_size, hidden_size, num_layers, num_direction, embedding_weight, device):
         super(EncoderRNN, self).__init__()
         self.hidden_size = hidden_size
+        self.dropout_rate = 0.1
         self.num_direction = num_direction
         self.embedding = nn.Embedding.from_pretrained(embedding_weight, freeze = False)
         self.device = device
@@ -19,6 +20,7 @@ class EncoderRNN(nn.Module):
 
     def forward(self, x, hidden, lengths):
         embed = self.embedding(x)
+	embed = F.dropout(embed, p=self.dropout_rate, training=True)
         batch_size = embed.size(0)
         embed = torch.nn.utils.rnn.pack_padded_sequence(embed, lengths.cpu().numpy(), batch_first=True)
         rnn_out, hidden = self.gru(embed, hidden)
