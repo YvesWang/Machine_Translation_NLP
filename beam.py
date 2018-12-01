@@ -50,6 +50,9 @@ class beam:
 			if next_token[k] == EOS_token:
 				self.finish_paths.append((best_scores[k], len(self.prev_ps), k))
 
+		# if len(self.prev_ps) == tgt_max_length:
+		# 	self.stopByMAX = True 
+
 		return None
 
 	def get_pred_sentence(self, sent_info):

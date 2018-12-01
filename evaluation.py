@@ -99,7 +99,7 @@ def evaluate_beam_batch(beam_size, loader, encoder, decoder, criterion, tgt_max_
                 encoder_max_len, decoder_hidden_dim)
 
             #loss = 0
-            while True:
+            for decoding_token_index in range(tgt_max_length):
                 decoder_input = torch.stack([beamer.next_ts[-1] for beamer in beamers], dim=0).unsqueeze(-1).view(batch_size*beam_size, 1).to(device)
                 decoder_output, decoder_hidden, _ = decoder(decoder_input, decoder_hidden, input_lengths_beam, encoder_outputs_beam)
                 vocab_size = decoder_output.size(1)
