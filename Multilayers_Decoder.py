@@ -1,17 +1,16 @@
 import torch.nn as nn
 import torch
 import torch.nn.functional as F
+from config import device,embedding_freeze
 
 class DecoderRNN(nn.Module):
-    def __init__(self, emb_size, hidden_size, vocab_size, num_layers, num_encoder_direction, embedding_weight, device):
+    def __init__(self, emb_size, hidden_size, vocab_size, num_layers, num_encoder_direction, embedding_weight, dropout_rate = 0.1):
         super(DecoderRNN, self).__init__()
         hidden_size = hidden_size * num_encoder_direction
         self.hidden_size = hidden_size
         self.num_layers = num_layers
-        if embedding_weight is not None:
-            self.embedding = nn.Embedding.from_pretrained(embedding_weight, freeze = False)
-        else:
-            self.embedding = nn.Embedding(vocab_size, emb_size)
+        self.dropout = nn.Dropout(dropout_rate)
+        self.embedding = nn.Embedding.from_pretrained(embedding_weight, freeze = embedding_freeze)
         self.gru = nn.GRU(emb_size, hidden_size, num_layers, batch_first=True)
         self.out = nn.Linear(hidden_size, vocab_size)
         self.device = device
@@ -31,11 +30,11 @@ class DecoderRNN(nn.Module):
     
 
 class DecoderAtten(nn.Module):
-    def __init__(self, emb_size, hidden_size, vocab_size, num_layers, num_encoder_direction, embedding_weight, atten_type, device):
+    def __init__(self, emb_size, hidden_size, vocab_size, num_layers, num_encoder_direction, embedding_weight, atten_type, dropout_rate = 0.1):
         super(DecoderAtten, self).__init__()
         hidden_size = hidden_size * num_encoder_direction
         self.hidden_size = hidden_size
-        self.dropout_rate = 0.1
+        self.dropout = nn.Dropout(dropout_rate)
         self.num_layers = num_layers
         if embedding_weight is not None:
             self.embedding = nn.Embedding.from_pretrained(embedding_weight, freeze = False)
@@ -50,7 +49,7 @@ class DecoderAtten(nn.Module):
 
     def forward(self, tgt_input, hidden, true_len, encoder_outputs):
         output = self.embedding(tgt_input)
-        output = F.dropout(output, p=self.dropout_rate, training=True)
+        output = self.dropout(output)
         #print(output.size())
         output, hidden = self.gru(output, hidden)
         ### add attention
@@ -87,8 +86,8 @@ class AttentionLayer(nn.Module):
         #self.atten = nn.Linear(key_size, 1)
 
     def forward(self, query, memory_bank, true_len):
-        batch_size, src_len, hidden_size = memory_bank.size()
-        query_len = query.size(1)
+        #batch_size, src_len, hidden_size = memory_bank.size()
+        #query_len = query.size(1)
         scores = self.atten_score(query, memory_bank)
         
         mask_matrix = sequence_mask(true_len).unsqueeze(1)

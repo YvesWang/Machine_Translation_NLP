@@ -5,7 +5,7 @@ import os.path
 import torch
 from torch.utils.data import Dataset, DataLoader
 from torch.nn.utils.rnn import pad_packed_sequence, pack_padded_sequence
-from config import device
+from config import device, max_src_len_dataloader, max_tgt_len_dataloader
 
 import random
 
@@ -16,12 +16,14 @@ class VocabDataset(Dataset):
     Note that this class inherits torch.utils.data.Dataset
     """
 
-    def __init__(self, train_input, train_ouput):
+    def __init__(self, train_input, train_ouput, src_clip = max_src_len_dataloader, tgt_clip = max_tgt_len_dataloader):
         """
         @param data_list: list of character
         @param target_list: list of targets
 
         """
+        self.src_clip = src_clip
+        self.tgt_clip = tgt_clip
         self.data_list, self.target_list = train_input, train_ouput
         assert (len(self.data_list) == len(self.target_list))
         #self.word2index = word2index
@@ -33,10 +35,22 @@ class VocabDataset(Dataset):
         """
         Triggered when you call dataset[i]
         """
+        
         train = self.data_list[key]
         label = self.target_list[key]
         train_length = len(train)
         label_length = len(label)
+
+        if self.src_clip:
+            if train_length > self.src_clip:
+                train = self.data_list[key][:self.src_clip]
+                train_length = self.src_clip
+
+        if self.tgt_clip:
+            if train_length > self.tgt_clip:
+                train = self.data_list[key][:self.tgt_clip]
+                train_length = self.tgt_clip
+        
 
         return train,train_length,label,label_length
 

@@ -1,16 +1,19 @@
 import torch.nn as nn
 import torch
 import torch.nn.functional as F
+from config import device,embedding_freeze
+
 
 class EncoderRNN(nn.Module):
-    def __init__(self, vocab_size, embed_size, hidden_size, num_layers, num_direction, embedding_weight, device):
+    def __init__(self, vocab_size, embed_size, hidden_size, num_layers, num_direction, embedding_weight, dropout_rate = 0.01):
         super(EncoderRNN, self).__init__()
         self.hidden_size = hidden_size
         self.dropout_rate = 0.1
         self.num_direction = num_direction
-        self.embedding = nn.Embedding.from_pretrained(embedding_weight, freeze = False)
+        self.embedding = nn.Embedding.from_pretrained(embedding_weight, freeze = embedding_freeze)
         self.device = device
         self.num_layers = num_layers
+        self.dropout = nn.Dropout(dropout_rate)
         if num_direction == 1:
             self.gru = nn.GRU(embed_size, hidden_size, num_layers, batch_first=True)
         elif num_direction == 2:
@@ -20,7 +23,7 @@ class EncoderRNN(nn.Module):
 
     def forward(self, x, hidden, lengths):
         embed = self.embedding(x)
-	embed = F.dropout(embed, p=self.dropout_rate, training=True)
+        embed = self.dropout(embed)
         batch_size = embed.size(0)
         embed = torch.nn.utils.rnn.pack_padded_sequence(embed, lengths.cpu().numpy(), batch_first=True)
         rnn_out, hidden = self.gru(embed, hidden)

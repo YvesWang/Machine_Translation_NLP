@@ -1,0 +1,153 @@
+import torch
+from torch import nn
+import torch.nn.functional as F
+from MultiheadAttention import MultiheadAttention
+import math
+
+class Encoder(nn.Module):
+    def __init__(self, args, embedding_weight, device, left_pad=True):
+        super(Encoder, self).__init__()
+        self.dropout = nn.Dropout(args.dropout)
+        self.embedding = nn.Embedding.from_pretrained(embedding_weight, freeze = False)
+        ############# we need an embedding position matrix ##################
+        ############# we need an embed scale matrix #########################
+        self.embed_positions = None
+        #embed_dim = embedding_weight.shape
+        #self.max_source_positions = args.max_source_positions
+        #self.embed_scale = math.sqrt(embed_dim)
+        # self.embed_positions = PositionalEmbedding(
+        #     args.max_source_positions, embed_dim, self.padding_idx,
+        #     left_pad=left_pad,
+        #     learned=args.encoder_learned_pos,
+        # ) if not args.no_token_positional_embeddings else None
+
+        self.layers = nn.ModuleList([])
+        self.layers.extend([
+            STEncoderLayer(args)
+            for i in range(args.encoder_layers)
+        ])
+        self.register_buffer('version', torch.Tensor([2]))
+        self.layer_norm = nn.LayerNorm(args.embed_dim)
+
+    
+    def forward(self, src_tokens, src_lengths):
+        """
+        Args:
+            src_tokens (LongTensor): tokens in the source language of shape
+                `(batch, src_len)`
+            src_lengths (torch.LongTensor): lengths of each source sentence of
+                shape `(batch)`
+
+        Returns:
+            dict:
+                - **encoder_out** (Tensor): the last encoder layer's output of
+                  shape `(src_len, batch, embed_dim)`
+                - **encoder_padding_mask** (ByteTensor): the positions of
+                  padding elements of shape `(batch, src_len)`
+        """
+        # embed tokens and positions
+        x = self.embed_scale * self.embedding(src_tokens)
+        if self.embed_positions is not None:
+            x += self.embed_positions(src_tokens)
+        x = self.dropout(x)
+
+        # compute padding mask
+        # encoder_padding_mask = src_tokens.eq(self.padding_idx)
+        # if not encoder_padding_mask.any():
+        #     encoder_padding_mask = None
+
+        # encoder layers
+        for layer in self.layers:
+            x = layer(x, src_lengths)
+
+        if self.normalize:
+            x = self.layer_norm(x)
+
+        return {
+            'encoder_out': x,  # B x T x C
+            'encoder_padding_mask': src_lengths,  # B x T
+        }
+
+class STEncoderLayer(nn.Module):
+    """Encoder layer block.
+
+    In the original paper each operation (multi-head attention or FFN) is
+    postprocessed with: `dropout -> add residual -> layernorm`. In the
+    tensor2tensor code they suggest that learning is more robust when
+    preprocessing each layer with layernorm and postprocessing with:
+    `dropout -> add residual`. We default to the approach in the paper, but the
+    tensor2tensor approach can be enabled by setting
+    *args.encoder_normalize_before* to ``True``.
+
+    Args:
+        args (argparse.Namespace): parsed command-line arguments
+    """
+
+    def __init__(self, args):
+        super().__init__()
+        self.embed_dim = args.encoder_embed_dim
+        self.self_attn = MultiheadAttention(
+            self.embed_dim, args.encoder_attention_heads,
+            dropout=args.attention_dropout,
+        )
+        self.dropout = args.dropout
+        self.relu_dropout = args.relu_dropout
+        self.normalize_before = args.encoder_normalize_before
+        self.fc1 = Linear(self.embed_dim, args.encoder_hidden_dim)
+        self.fc2 = Linear(args.encoder_hidden_dim, self.embed_dim)
+        self.layer_norms = nn.ModuleList([nn.LayerNorm(self.embed_dim) for i in range(2)])
+        self.encoder_dropout1 = nn.Dropout(args.dropout)
+        self.encoder_dropout2 = nn.Dropout(args.dropout)
+        self.encoder_dropout3 = nn.Dropout(args.dropout)
+
+    def forward(self, x, src_lengths):
+        """
+        Args:
+            x (Tensor): input to the layer of shape `(seq_len, batch, embed_dim)`
+            encoder_padding_mask (ByteTensor): binary ByteTensor of shape
+                `(batch, src_len)` where padding elements are indicated by ``1``.
+
+        Returns:
+            encoded output of shape `(batch, src_len, embed_dim)`
+        """
+        #batch_size , tgt_len, embed_dim = x.size()
+        residual = x
+        x = self.layer_norm(0, x, before=True)
+        # why padding
+        x, _ = self.self_attn(query=x, key=x, value=x, key_padding_mask=src_lengths, need_weights=False)
+        x = self.encoder_dropout1(x)
+        
+        assert x.size() == residual.size()
+        x = residual + x
+        x = self.layer_norm(0, x, after=True)
+
+        residual = x
+        x = self.layer_norm(1, x, before=True)
+        x = F.relu(self.fc1(x))
+        x = self.encoder_dropout2(x)
+        x = self.fc2(x)
+        x = self.encoder_dropout3(x)
+        x = residual + x
+        x = self.layer_norm(1, x, after=True)
+        return x
+
+
+    def layer_norm(self, i, x, before=False, after=False):
+        assert before ^ after
+        if after ^ self.normalize_before:
+            return self.layer_norms[i](x)
+        else:
+            return x
+
+
+def LayerNorm(embedding_dim):
+    m = nn.LayerNorm(embedding_dim)
+    return m
+
+
+def Linear(in_features, out_features, bias=True):
+    m = nn.Linear(in_features, out_features, bias)
+    nn.init.xavier_uniform_(m.weight)
+    if bias:
+        nn.init.constant_(m.bias, 0.)
+    return m
