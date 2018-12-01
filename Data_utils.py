@@ -5,7 +5,7 @@ import os.path
 import torch
 from torch.utils.data import Dataset, DataLoader
 from torch.nn.utils.rnn import pad_packed_sequence, pack_padded_sequence
-from config import device, max_src_len_dataloader, max_tgt_len_dataloader
+from config import device
 
 import random
 
@@ -16,7 +16,7 @@ class VocabDataset(Dataset):
     Note that this class inherits torch.utils.data.Dataset
     """
 
-    def __init__(self, train_input, train_ouput, src_clip = max_src_len_dataloader, tgt_clip = max_tgt_len_dataloader):
+    def __init__(self, train_input, train_ouput, src_clip = None, tgt_clip = None):
         """
         @param data_list: list of character
         @param target_list: list of targets

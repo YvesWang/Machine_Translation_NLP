@@ -233,13 +233,13 @@ def start_train(transtype, paras):
     val_output_index = text2index(val_tgt, tgtLang.word2index)
     ### save srcLang and tgtLang
 
-    train_dataset = VocabDataset(train_input_index,train_output_index)
+    train_dataset = VocabDataset(train_input_index,train_output_index, max_src_len_dataloader, max_tgt_len_dataloader)
     train_loader = torch.utils.data.DataLoader(dataset=train_dataset,
                                                batch_size=batch_size,
                                                collate_fn=vocab_collate_func,
-                                               shuffle=False)
+                                               shuffle=FalNotImplementedse)
 
-    val_dataset = VocabDataset(val_input_index,val_output_index)
+    val_dataset = VocabDataset(val_input_index,val_output_index, None,None)
     val_loader = torch.utils.data.DataLoader(dataset=val_dataset,
                                             batch_size=batch_size,
                                             collate_fn=vocab_collate_func,
