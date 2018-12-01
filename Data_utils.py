@@ -38,18 +38,13 @@ class VocabDataset(Dataset):
         
         train = self.data_list[key]
         label = self.target_list[key]
+        if self.src_clip is not None:
+            train = train[:self.src_clip]
         train_length = len(train)
+
+        if self.tgt_clip is not None:
+            label = label[:self.tgt_clip]
         label_length = len(label)
-
-        if self.src_clip:
-            if train_length > self.src_clip:
-                train = self.data_list[key][:self.src_clip]
-                train_length = self.src_clip
-
-        if self.tgt_clip:
-            if train_length > self.tgt_clip:
-                train = self.data_list[key][:self.tgt_clip]
-                train_length = self.tgt_clip
         
 
         return train,train_length,label,label_length

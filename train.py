@@ -110,7 +110,7 @@ def train(input_tensor, input_lengths, target_tensor, target_lengths,
     encoder_optimizer.step()
     decoder_optimizer.step()
 
-    return torch.div(loss, target_lengths.type_as(loss).mean()).item()  #/target_lengths.mean()
+    return loss.item()/tgt_max_len_batch  #torch.div(loss, target_lengths.type_as(loss).mean()).item()  #/target_lengths.mean()
 
 
 def trainIters(train_loader, val_loader, encoder, decoder, num_epochs, 
@@ -272,7 +272,7 @@ def start_train(transtype, paras):
 if __name__ == "__main__":
     transtype = 'zh2en'
     paras = dict( 
-        teacher_forcing_ratio = 0.5,
+        teacher_forcing_ratio = 1,
         emb_size = 300,
         hidden_size = 200,
         num_layers = 1,
@@ -280,7 +280,7 @@ if __name__ == "__main__":
         learning_rate = 5e-3,
         num_epochs = 60,
         batch_size = 100, 
-        attention_type = 'dot_prod', # None, dot_prod, general, concat
+        attention_type = 'dot_prod',  #general, concat
         beam_size = 1,
         dropout_rate = 0.1,
 
