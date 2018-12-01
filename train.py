@@ -237,7 +237,7 @@ def start_train(transtype, paras):
     train_loader = torch.utils.data.DataLoader(dataset=train_dataset,
                                                batch_size=batch_size,
                                                collate_fn=vocab_collate_func,
-                                               shuffle=FalNotImplementedse)
+                                               shuffle=True)
 
     val_dataset = VocabDataset(val_input_index,val_output_index, None,None)
     val_loader = torch.utils.data.DataLoader(dataset=val_dataset,
@@ -272,15 +272,15 @@ def start_train(transtype, paras):
 if __name__ == "__main__":
     transtype = 'zh2en'
     paras = dict( 
-        teacher_forcing_ratio = 1,
+        teacher_forcing_ratio = 0.5,
         emb_size = 300,
-        hidden_size = 100,
+        hidden_size = 200,
         num_layers = 1,
         num_direction = 2,
-        learning_rate = 5*1e-3,
+        learning_rate = 5e-3,
         num_epochs = 60,
         batch_size = 100, 
-        attention_type = None, # None, dot_prod, general, concat
+        attention_type = 'dot_prod', # None, dot_prod, general, concat
         beam_size = 1,
         dropout_rate = 0.1,
 
