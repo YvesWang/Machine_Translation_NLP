@@ -127,7 +127,10 @@ def evaluate_beam_batch(beam_size, loader, encoder, decoder, criterion, tgt_max_
             for i_batch in range(batch_size):
                 beamer = beamers[i_batch]
                 paths_sort = sorted(beamer.finish_paths, key=lambda x: x[0], reverse=True)
-                best_path = paths_sort[0]
+                if len(paths_sort) == 0:
+                    best_path = (beamer.scores[0], len(beamer.prev_ps), 0)
+                else:
+                    best_path = paths_sort[0]
                 score_best_path, tokens_best_path = beamer.get_pred_sentence(best_path)
                 # ground true
                 tgt_sent_tokens = fun_index2token(target_tensor_numpy[i_batch].tolist(), tgt_idx2words)
