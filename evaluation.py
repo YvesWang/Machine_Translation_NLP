@@ -126,7 +126,7 @@ def evaluate_beam_batch(beam_size, loader, encoder, decoder, criterion, tgt_max_
             target_tensor_numpy = target_tensor.cpu().numpy()
             for i_batch in range(batch_size):
                 beamer = beamers[i_batch]
-                paths_sort = sorted(beamer.finish_paths, key=lambda x: x[0], reverse=True)
+                paths_sort = sorted(beamer.finish_paths, key=lambda x: x[0], reverse=True) # add penalty for short sentence
                 best_path = paths_sort[0]
                 score_best_path, tokens_best_path = beamer.get_pred_sentence(best_path)
                 # ground true
