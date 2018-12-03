@@ -53,7 +53,7 @@ def evaluate_batch(loader, encoder, decoder, criterion, tgt_max_length, tgt_idx2
                     break
 
             target_tensor_numpy = target_tensor.cpu().numpy()
-            input_tensor_numpy = input_tensor.cpu.numpy()
+            input_tensor_numpy = input_tensor.cpu().numpy()
             for i_batch in range(batch_size):
                 tgt_sent_tokens = fun_index2token(target_tensor_numpy[i_batch].tolist(), tgt_idx2words) #:target_lengths_numpy[i_batch]
                 #tgt_sents_nltk.append([tgt_sent_tokens])
@@ -62,7 +62,7 @@ def evaluate_batch(loader, encoder, decoder, criterion, tgt_max_length, tgt_idx2
                 #tgt_pred_sents_nltk.append(tgt_pred_sent_tokens)
                 tgt_pred_sents_sacre.append(' '.join(tgt_pred_sent_tokens))
                 src_sent_tokens = fun_index2token(input_tensor_numpy[i_batch].tolist(), src_idx2words)
-                src_snets.append(' '.join(src_sent_tokens))
+                src_sents.append(' '.join(src_sent_tokens))
             # if decoding_token_index == 0:
             #     print('dddddddddd',src_sents[-1],tgt_sents[-1])
             # if target_lengths == 0:

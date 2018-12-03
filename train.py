@@ -278,7 +278,7 @@ if __name__ == "__main__":
         num_layers = 1,
         num_direction = 1,
         learning_rate = 5e-3,
-        num_epochs = 60,
+        num_epochs = 500,
         batch_size = 100, 
         attention_type = 'dot_prod',  #general, concat
         beam_size = 1,
