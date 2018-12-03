@@ -15,7 +15,7 @@ def fun_index2token(index_list, idx2words):
             token_list.append(idx2words[index])
     return token_list
 
-def evaluate_batch(loader, encoder, decoder, criterion, tgt_max_length, tgt_idx2words):
+def evaluate_batch(loader, encoder, decoder, criterion, tgt_max_length, tgt_idx2words, src_idx2words):
     """
     """
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")    
@@ -24,6 +24,7 @@ def evaluate_batch(loader, encoder, decoder, criterion, tgt_max_length, tgt_idx2
     tgt_sents_sacre = []
     #tgt_pred_sents_nltk = []
     tgt_pred_sents_sacre = []
+    src_sents = []
     with torch.no_grad():
         for input_tensor, input_lengths, target_tensor, target_lengths in loader:
             batch_size = input_tensor.size(0)
@@ -52,6 +53,7 @@ def evaluate_batch(loader, encoder, decoder, criterion, tgt_max_length, tgt_idx2
                     break
 
             target_tensor_numpy = target_tensor.cpu().numpy()
+            input_tensor_numpy = input_tensor.cpu.numpy()
             for i_batch in range(batch_size):
                 tgt_sent_tokens = fun_index2token(target_tensor_numpy[i_batch].tolist(), tgt_idx2words) #:target_lengths_numpy[i_batch]
                 #tgt_sents_nltk.append([tgt_sent_tokens])
@@ -59,6 +61,8 @@ def evaluate_batch(loader, encoder, decoder, criterion, tgt_max_length, tgt_idx2
                 tgt_pred_sent_tokens = fun_index2token(idx_token_pred[i_batch].tolist(), tgt_idx2words)
                 #tgt_pred_sents_nltk.append(tgt_pred_sent_tokens)
                 tgt_pred_sents_sacre.append(' '.join(tgt_pred_sent_tokens))
+                src_sent_tokens = fun_index2token(input_tensor_numpy[i_batch].tolist(), src_idx2words)
+                src_snets.append(' '.join(src_sent_tokens))
             # if decoding_token_index == 0:
             #     print('dddddddddd',src_sents[-1],tgt_sents[-1])
             # if target_lengths == 0:
@@ -69,7 +73,8 @@ def evaluate_batch(loader, encoder, decoder, criterion, tgt_max_length, tgt_idx2
         tokenize='none', use_effective_order=True)
     loss = np.mean(loss_all)
     if True:
-        random_sample = 300 #np.random.randint(len(tgt_pred_sents_sacre))
+        random_sample = np.random.randint(len(tgt_pred_sents_sacre))
+        print('src:', src_sents[random_sample])
         print('Ref: ', tgt_sents_sacre[random_sample])
         print('pred: ', tgt_pred_sents_sacre[random_sample])
     return sacre_bleu_score, None, loss
