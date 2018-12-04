@@ -71,20 +71,21 @@ class MultiheadAttention(nn.Module):
             attn_weights = attn_weights.float().masked_fill(
                 1-mask.to(device),float('-inf')) # FP16 support: cast to float and back
             attn_weights = attn_weights.view(batch_size * self.num_heads, tgt_len, src_len)
-            
+        
+
         scores_normalized = F.softmax(attn_weights, dim=-1)
         scores_normalized = self.attn_dropout(scores_normalized)
-
-        attn = torch.bmm(attn_weights, V) # bsz*n tgt head
+        
+        attn = torch.bmm(scores_normalized, V) # bsz*n tgt head
         assert attn.size() == (batch_size * self.num_heads, tgt_len, self.head_dim)
 
         attn = attn.contiguous().view(batch_size * tgt_len, embed_dim) # bsz, tgt, embed
         attn = self.out_proj(attn).view(batch_size, tgt_len, embed_dim)
-
+        
         if need_weights:
             # average attention weights over heads
-            attn_weights = attn_weights.view(batch_size, self.num_heads, tgt_len, src_len)
-            attn_weights = attn_weights.sum(dim=1) / self.num_heads
+            attn_weights = attn.view(batch_size, self.num_heads, tgt_len, src_len)
+            attn_weights = attn.sum(dim=1) / self.num_heads
         else:
             attn_weights = None
 
