@@ -51,13 +51,11 @@ class Decoder(nn.Module):
     def forward(self, output_tokens, src_lengths, encoder_out=None):
         """
         Args:
-            prev_output_tokens (LongTensor): previous decoder outputs of shape
+            output_tokens (LongTensor): decoder input of shape
                 `(batch, tgt_len)`, for input feeding/teacher forcing
+            src_lengths (Tensor): source input for masking padding node
             encoder_out (Tensor, optional): output from the encoder, used for
                 encoder-side attention
-            incremental_state (dict): dictionary used for storing state during
-                :ref:`Incremental decoding`
-
         Returns:
             tuple:
                 - the last decoder layer's output of shape `(batch, tgt_len,
@@ -68,12 +66,13 @@ class Decoder(nn.Module):
 
 
         # embed tokens and positions
-        x = self.embed_scale * self.embedding(output_tokens)
+        x = self.embed_scale * self.embedding(output_tokens)    # bsz tgt emb
         if self.embed_positions is not None:
             x += self.embed_positions(output_tokens)
         x = self.dropout(x)
 
         inner_states = [x]
+        attn_states = []
         # decoder layers
         for layer in self.layers:
             x, attn = layer(
@@ -82,13 +81,14 @@ class Decoder(nn.Module):
                 src_lengths= src_lengths
             )
             inner_states.append(x)
+            attn_states.append(atten)
 
         if self.normalize:
             x = self.layer_norm(x)
 
-        logits = self.project_out_dim(x)
+        logits = self.project_out_dim(x) # bsz tgt vocab
         output = self.logsoftmax(logits)
-        return output, {'attn': attn, 'inner_states': inner_states}
+        return output, {'attn': attn_states, 'inner_states': inner_states}
     
 
 

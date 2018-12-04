@@ -5,7 +5,7 @@ from MultiheadAttention import MultiheadAttention
 import math
 
 class Encoder(nn.Module):
-    def __init__(self, args, embedding_weight, device, left_pad=True):
+    def __init__(self, args, embedding_weight):
         super(Encoder, self).__init__()
         self.dropout = nn.Dropout(args['dropout'])
         self.embedding = nn.Embedding.from_pretrained(embedding_weight, freeze = False)
@@ -39,11 +39,10 @@ class Encoder(nn.Module):
                 shape `(batch)`
 
         Returns:
-            dict:
+            tuple:
                 - **encoder_out** (Tensor): the last encoder layer's output of
-                  shape `(src_len, batch, embed_dim)`
-                - **encoder_padding_mask** (ByteTensor): the positions of
-                  padding elements of shape `(batch, src_len)`
+                  shape `(batch, src_len, embed_dim)`
+                
         """
         # embed tokens and positions
         x = self.embed_scale * self.embedding(src_tokens)
@@ -58,10 +57,12 @@ class Encoder(nn.Module):
         if self.normalize:
             x = self.layer_norm(x)
 
-        return {
-            'encoder_out': x,  # B x T x C
-            'encoder_padding_mask': src_lengths,  # B x T
-        }
+        return encoder_out, src_lengths
+
+        #return {
+        #    'encoder_out': x,  # B x T x C
+        #    'encoder_padding_mask': src_lengths,  # B x T
+        #}
 
 class TransformerEncoderLayer(nn.Module):
     """Encoder layer block.
