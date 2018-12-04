@@ -126,7 +126,7 @@ def trainIters(train_loader, val_loader, encoder, decoder, num_epochs,
         decoder.load_state_dict(check_point_state['decoder_state_dict'])
         decoder_optimizer.load_state_dict(check_point_state['decoder_optimizer_state_dict'])
 
-    criterion = nn.NLLLoss(ignore_index=PAD_token)
+    criterion = nn.NLLLoss() #nn.NLLLoss(ignore_index=PAD_token)
     max_val_bleu = 0
 
     for epoch in range(num_epochs): 
@@ -274,18 +274,18 @@ if __name__ == "__main__":
     paras = dict( 
         teacher_forcing_ratio = 1,
         emb_size = 300,
-        hidden_size = 200,
+        hidden_size = 256,
         num_layers = 1,
         num_direction = 1,
-        learning_rate = 5e-3,
-        num_epochs = 500,
+        learning_rate = 1e-3,
+        num_epochs = 100,
         batch_size = 100, 
         attention_type = 'dot_prod',  #general, concat
         beam_size = 1,
         dropout_rate = 0.1,
 
         model_save_info = dict(
-            model_path = 'nmt_models/test',
+            model_path = 'nmt_models/zh-en/',
             epochs_per_save_model = 10,
             model_path_for_resume = None #'nmt_models/epoch_0.pth'
             )

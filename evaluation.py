@@ -155,13 +155,14 @@ def evaluate_beam_batch(beam_size, loader, encoder, decoder, criterion, tgt_max_
 
 
 
-def evaluate_single(data, encoder, decoder, criterion, tgt_max_length, tgt_idx2words):
+def evaluate_single(data, encoder, decoder, criterion, tgt_max_length, tgt_idx2words, src_idx2words):
     """
     """
     input_tensor, input_lengths, target_tensor, target_lengths = data
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")    
     loss_all = []
     #tgt_sents_nltk = []
+    src_sents = []
     tgt_sents_sacre = []
     #tgt_pred_sents_nltk = []
     tgt_pred_sents_sacre = []
@@ -193,6 +194,7 @@ def evaluate_single(data, encoder, decoder, criterion, tgt_max_length, tgt_idx2w
                 break
 
         target_tensor_numpy = target_tensor.cpu().numpy()
+        input_tensor_numpy = input_tensor.cpu().numpy()
         for i_batch in range(batch_size):
             tgt_sent_tokens = fun_index2token(target_tensor_numpy[i_batch].tolist(), tgt_idx2words) #:target_lengths_numpy[i_batch]
             #tgt_sents_nltk.append([tgt_sent_tokens])
@@ -200,6 +202,8 @@ def evaluate_single(data, encoder, decoder, criterion, tgt_max_length, tgt_idx2w
             tgt_pred_sent_tokens = fun_index2token(idx_token_pred[i_batch].tolist(), tgt_idx2words)
             #tgt_pred_sents_nltk.append(tgt_pred_sent_tokens)
             tgt_pred_sents_sacre.append(' '.join(tgt_pred_sent_tokens))
+            src_sent_tokens = fun_index2token(input_tensor_numpy[i_batch].tolist(), src_idx2words)
+            src_sents.append(' '.join(src_sent_tokens))
         # if decoding_token_index == 0:
         #     print('dddddddddd',src_sents[-1],tgt_sents[-1])
         # if target_lengths == 0:
@@ -209,7 +213,7 @@ def evaluate_single(data, encoder, decoder, criterion, tgt_max_length, tgt_idx2w
     sacre_bleu_score = sacrebleu.corpus_bleu(tgt_pred_sents_sacre, [tgt_sents_sacre], smooth='exp', smooth_floor=0.0, force=False, lowercase=False,
         tokenize='none', use_effective_order=True)
     loss = np.mean(loss_all)
-    return sacre_bleu_score, None, loss, tgt_sents_sacre, tgt_pred_sents_sacre, None # atten
+    return sacre_bleu_score, None, loss, tgt_sents_sacre, tgt_pred_sents_sacre, src_sents, None # atten
 
 
 # def evaluate(loader, encoder, decoder, criterion, tgt_max_length, tgt_idx2words):
