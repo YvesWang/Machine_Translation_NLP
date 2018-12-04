@@ -50,7 +50,7 @@ class Encoder(nn.Module):
         if self.embed_positions is not None:
             x += self.embed_positions(src_tokens)
         x = self.dropout(x)
-
+        
         # encoder layers
         for layer in self.layers:
             x = layer(x, src_lengths)
@@ -99,6 +99,7 @@ class TransformerEncoderLayer(nn.Module):
         #batch_size , tgt_len, embed_dim = x.size()
         residual = x
         x = self.layer_norm(0, x, before=True)
+
         x, _ = self.self_attn(query=x, key=x, value=x, src_true_len=src_lengths, need_weights=False)
         x = self.encoder_dropout1(x)
         
