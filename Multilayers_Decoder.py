@@ -4,9 +4,8 @@ import torch.nn.functional as F
 from config import device,embedding_freeze
 
 class DecoderRNN(nn.Module):
-    def __init__(self, emb_size, hidden_size, vocab_size, num_layers, num_encoder_direction, embedding_weight, dropout_rate = 0.1):
+    def __init__(self, emb_size, hidden_size, vocab_size, num_layers, embedding_weight, dropout_rate = 0.1):
         super(DecoderRNN, self).__init__()
-        hidden_size = hidden_size * num_encoder_direction
         self.hidden_size = hidden_size
         self.num_layers = num_layers
         self.dropout = nn.Dropout(dropout_rate)
@@ -24,15 +23,14 @@ class DecoderRNN(nn.Module):
         output = self.logsoftmax(logits)
         return output, hidden, None
 
-    def initHidden(self, encoder_hidden):
-        batch_size = encoder_hidden.size(1)
-        return encoder_hidden.expand(self.num_layers, batch_size, self.hidden_size).contiguous()
+    # def initHidden(self, encoder_hidden):
+    #     batch_size = encoder_hidden.size(1)
+    #     return encoder_hidden.expand(self.num_layers, batch_size, self.hidden_size).contiguous()
     
 
 class DecoderAtten(nn.Module):
-    def __init__(self, emb_size, hidden_size, vocab_size, num_layers, num_encoder_direction, embedding_weight, atten_type, dropout_rate = 0.1):
+    def __init__(self, emb_size, hidden_size, vocab_size, num_layers, embedding_weight, atten_type, dropout_rate = 0.1):
         super(DecoderAtten, self).__init__()
-        hidden_size = hidden_size * num_encoder_direction
         self.hidden_size = hidden_size
         self.dropout = nn.Dropout(dropout_rate)
         self.num_layers = num_layers
@@ -63,7 +61,7 @@ class DecoderAtten(nn.Module):
     
     def initHidden(self, encoder_hidden):
         batch_size = encoder_hidden.size(1)
-        return encoder_hidden.expand(self.num_layers,batch_size, self.hidden_size).contiguous()
+        return encoder_hidden.expand(self.num_layers, batch_size, self.hidden_size).contiguous()
 
 
 class AttentionLayer(nn.Module):

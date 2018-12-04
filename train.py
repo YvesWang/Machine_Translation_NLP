@@ -13,6 +13,7 @@ from Multilayers_Decoder import DecoderRNN, DecoderAtten
 from config import *
 import random
 from evaluation import evaluate_batch, evaluate_beam_batch
+import pickle 
 
 ####################Define Global Variable#########################
 
@@ -179,6 +180,7 @@ def start_train(transtype, paras):
     hidden_size = paras['hidden_size']
     num_layers = paras['num_layers']
     num_direction = paras['num_direction']
+    deal_bi = paras['deal_bi']
     learning_rate = paras['learning_rate']
     num_epochs = paras['num_epochs']
     batch_size = paras['batch_size']
@@ -198,6 +200,13 @@ def start_train(transtype, paras):
     if not os.path.exists(model_save_info['model_path']):
         os.makedirs(model_save_info['model_path'])
     ### save model hyperparameters
+    with open(model_save_info['model_path']+'model_params.pkl') as f:
+        model_hyparams = paras
+        model_hyparams['address_book'] = address_book
+        model_hyparams['vocab_size'] = (src_vocab_size, tgt_vocab_size)
+        model_hyparams['tgt_max_length'] = tgt_max_length
+        model_hyparams['max_len_dataloader'] = (max_src_len_dataloader, max_tgt_len_dataloader)
+        pickle.dump(model_hyparams, f)
 
     train_src = []
     with open(train_src_add) as f:
@@ -255,11 +264,11 @@ def start_train(transtype, paras):
     embedding_tgt_weight = torch.from_numpy(tgtLang.embedding_matrix).type(torch.FloatTensor).to(device)
     print(embedding_src_weight.size(), embedding_tgt_weight.size())
     if attention_type:
-        encoder = EncoderRNN(srcLang.vocab_size, emb_size, hidden_size, num_layers, num_direction, embedding_weight = embedding_src_weight, dropout_rate = dropout_rate)
-        decoder = DecoderAtten(emb_size, hidden_size, tgtLang.vocab_size, num_layers, num_direction, embedding_weight = embedding_tgt_weight, atten_type = attention_type, dropout_rate = dropout_rate)
+        encoder = EncoderRNN(srcLang.vocab_size, emb_size, hidden_size, num_layers, num_direction, deal_bi, embedding_weight = embedding_src_weight, dropout_rate = dropout_rate)
+        decoder = DecoderAtten(emb_size, hidden_size, tgtLang.vocab_size, num_layers, embedding_weight = embedding_tgt_weight, atten_type = attention_type, dropout_rate = dropout_rate)
     else:      
-        encoder = EncoderRNN(srcLang.vocab_size, emb_size,hidden_size, num_layers, num_direction, embedding_weight = embedding_src_weight, dropout_rate = dropout_rate)
-        decoder = DecoderRNN(emb_size, hidden_size, tgtLang.vocab_size, num_layers, num_direction, embedding_weight = embedding_tgt_weight, dropout_rate = dropout_rate)
+        encoder = EncoderRNN(srcLang.vocab_size, emb_size,hidden_size, num_layers, num_direction, deal_bi, embedding_weight = embedding_src_weight, dropout_rate = dropout_rate)
+        decoder = DecoderRNN(emb_size, hidden_size, tgtLang.vocab_size, num_layers, embedding_weight = embedding_tgt_weight, dropout_rate = dropout_rate)
     
     encoder, decoder = encoder.to(device), decoder.to(device)
     print('Encoder:')
@@ -277,6 +286,7 @@ if __name__ == "__main__":
         hidden_size = 256,
         num_layers = 1,
         num_direction = 1,
+        deal_bi = 'linear', #{'linear', 'sum'}
         learning_rate = 1e-3,
         num_epochs = 100,
         batch_size = 100, 
