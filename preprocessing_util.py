@@ -107,8 +107,8 @@ class Lang:
 def text2index(data, word2index):
     indexdata = []
     for line in data:
-        indexdata.append([word2index[c] if c in word2index.keys() else UNK_token  for c in line])
-        indexdata[-1].append(EOS_token)
+        indexdata.append([word2index[c] if c in word2index.keys() else UNK_token for c in line])
+        #indexdata[-1].append(EOS_token)
     print('finish')
     return indexdata
 

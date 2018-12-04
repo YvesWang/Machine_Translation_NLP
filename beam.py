@@ -1,5 +1,5 @@
 import torch 
-from config import *
+from config import device, PAD_token, SOS_token, EOS_token, UNK_token
 
 class beam:
 	def __init__(self, size, min_length=0, n_best=1):

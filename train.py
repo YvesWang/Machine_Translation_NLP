@@ -10,7 +10,7 @@ from Data_utils import VocabDataset, vocab_collate_func
 from preprocessing_util import preposs_toekn, Lang, text2index, construct_Lang
 from Multilayers_Encoder import EncoderRNN
 from Multilayers_Decoder import DecoderRNN, DecoderAtten
-from config import *
+from config import device, PAD_token, SOS_token, EOS_token, UNK_token, embedding_freeze, vocab_prefix
 import random
 from evaluation import evaluate_batch, evaluate_beam_batch
 import pickle 
@@ -115,7 +115,7 @@ def train(input_tensor, input_lengths, target_tensor, target_lengths,
 
 
 def trainIters(train_loader, val_loader, encoder, decoder, num_epochs, 
-               learning_rate, teacher_forcing_ratio, srcLang, tgtLang, model_save_info, beam_size):
+               learning_rate, teacher_forcing_ratio, srcLang, tgtLang, model_save_info, tgt_max_len, beam_size):
 
     encoder_optimizer = optim.Adam(encoder.parameters(), lr=learning_rate)
     decoder_optimizer = optim.Adam(decoder.parameters(), lr=learning_rate)
@@ -175,6 +175,12 @@ def trainIters(train_loader, val_loader, encoder, decoder, num_epochs,
     
 
 def start_train(transtype, paras):
+    src_max_vocab_size = paras['src_max_vocab_size']
+    tgt_max_vocab_size = paras['tgt_max_vocab_size']
+    tgt_max_len = paras['tgt_max_len']
+    max_src_len_dataloader = paras['max_src_len_dataloader']
+    max_tgt_len_dataloader = paras['max_tgt_len_dataloader']
+
     teacher_forcing_ratio = paras['teacher_forcing_ratio']
     emb_size = paras['emb_size']
     hidden_size = paras['hidden_size']
@@ -189,7 +195,14 @@ def start_train(transtype, paras):
     model_save_info = paras['model_save_info']
     dropout_rate = paras['dropout_rate']
 
-    
+    address_book={
+    train_src = 'Machine_Translation_NLP/iwsltzhen/iwslt-{}-{}/train.tok.{}'.format(transtype[0], transtype[1], transtype[0]),
+    train_tgt = 'Machine_Translation_NLP/iwsltzhen/iwslt-{}-{}/train.tok.{}'.format(transtype[0], transtype[1], transtype[1]),
+    val_src = 'Machine_Translation_NLP/iwsltzhen/iwslt-{}-{}/dev.tok.{}'.format(transtype[0], transtype[1], transtype[0]),
+    val_tgt = 'Machine_Translation_NLP/iwsltzhen/iwslt-{}-{}/dev.tok.{}'.format(transtype[0], transtype[1], transtype[1]),
+    src_emb = 'embedding/wiki.{}.vec'.format(transtype[0]),
+    tgt_emb = 'embedding/wiki.{}.vec'.format(transtype[1])
+    }
     #print(address_book)
     train_src_add = address_book['train_src']
     train_tgt_add = address_book['train_tgt']
@@ -203,9 +216,9 @@ def start_train(transtype, paras):
     with open(model_save_info['model_path']+'model_params.pkl', 'wb') as f:
         model_hyparams = paras
         model_hyparams['address_book'] = address_book
-        model_hyparams['vocab_size'] = (src_vocab_size, tgt_vocab_size)
-        model_hyparams['tgt_max_length'] = tgt_max_length
-        model_hyparams['max_len_dataloader'] = (max_src_len_dataloader, max_tgt_len_dataloader)
+        #model_hyparams['vocab_size'] = (src_vocab_size, tgt_vocab_size)
+        #model_hyparams['tgt_max_length'] = tgt_max_length
+        #model_hyparams['max_len_dataloader'] = (max_src_len_dataloader, max_tgt_len_dataloader)
         pickle.dump(model_hyparams, f)
     print(model_hyparams)
 
@@ -231,10 +244,6 @@ def start_train(transtype, paras):
 
     print('The number of train samples: ', len(train_src))
     print('The number of val samples: ', len(val_src))
-    # srcLang = Lang('src')
-    # srcLang.load_embedding(address_book['src_emb'], src_vocab_size)
-    # tgtLang = Lang('tgt')
-    # tgtLang.load_embedding(address_book['tgt_emb'], tgt_vocab_size)
     srcLang = construct_Lang('src', src_vocab_size, address_book['src_emb'], train_src)
     tgtLang = construct_Lang('tgt', tgt_vocab_size, address_book['tgt_emb'], train_tgt)
     train_input_index = text2index(train_src, srcLang.word2index) #add EOS token here 
@@ -249,7 +258,7 @@ def start_train(transtype, paras):
                                                collate_fn=vocab_collate_func,
                                                shuffle=True)
 
-    val_dataset = VocabDataset(val_input_index,val_output_index, None,None)
+    val_dataset = VocabDataset(val_input_index,val_output_index, None, None)
     val_loader = torch.utils.data.DataLoader(dataset=val_dataset,
                                             batch_size=batch_size,
                                             collate_fn=vocab_collate_func,
@@ -276,22 +285,29 @@ def start_train(transtype, paras):
     print(encoder)
     print('Decoder:')
     print(decoder)
-    trainIters(train_loader, val_loader, encoder, decoder, num_epochs, learning_rate, teacher_forcing_ratio, srcLang, tgtLang, model_save_info, beam_size)
+    trainIters(train_loader, val_loader, encoder, decoder, num_epochs, learning_rate, teacher_forcing_ratio, srcLang, tgtLang, model_save_info, tgt_max_len, beam_size)
     
 
 if __name__ == "__main__":
-    transtype = 'zh2en'
+    transtype = ('zh', 'en')
     paras = dict( 
-        teacher_forcing_ratio = 1,
+        src_max_vocab_size = 40000,
+        tgt_max_vocab_size = 20000,
+        tgt_max_len = 60,
+        max_src_len_dataloader = 60, 
+        max_tgt_len_dataloader = 60, 
+
         emb_size = 300,
         hidden_size = 256,
         num_layers = 2,
         num_direction = 2,
         deal_bi = 'linear', #{'linear', 'sum'}
+        attention_type = 'dot_prod',  #general, concat
+        teacher_forcing_ratio = 1,
+
         learning_rate = 1e-3,
         num_epochs = 100,
         batch_size = 100, 
-        attention_type = 'dot_prod',  #general, concat
         beam_size = 1,
         dropout_rate = 0.1,
 
