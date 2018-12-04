@@ -14,7 +14,7 @@ class Encoder(nn.Module):
         self.embed_positions = None
         #embed_dim = embedding_weight.shape
         #self.max_source_positions = args.max_source_positions
-        #self.embed_scale = math.sqrt(embed_dim)
+        self.embed_scale = math.sqrt(args['encoder_embed_dim'])
         # self.embed_positions = PositionalEmbedding(
         #     args.max_source_positions, embed_dim, self.padding_idx,
         #     left_pad=left_pad,
@@ -28,6 +28,7 @@ class Encoder(nn.Module):
         ])
         self.register_buffer('version', torch.Tensor([2]))
         self.layer_norm = nn.LayerNorm(args['encoder_embed_dim'])
+        self.normalize = args['encoder_normalize_before']
 
     
     def forward(self, src_tokens, src_lengths):
@@ -57,7 +58,7 @@ class Encoder(nn.Module):
         if self.normalize:
             x = self.layer_norm(x)
 
-        return encoder_out, src_lengths
+        return x, src_lengths
 
         #return {
         #    'encoder_out': x,  # B x T x C

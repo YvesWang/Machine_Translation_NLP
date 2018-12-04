@@ -1,6 +1,7 @@
 import torch
 from torch import nn
 import torch.nn.functional as F
+from config import device
 
 class MultiheadAttention(nn.Module):
     """
@@ -57,17 +58,18 @@ class MultiheadAttention(nn.Module):
         if src_true_len is not None:
             # don't attend to padding symbols
             attn_weights = attn_weights.view(batch_size, self.num_heads, tgt_len, src_len)
+            mask = sequence_mask(src_true_len).unsqueeze(1).unsqueeze(2).expand(batch_size, self.num_heads, tgt_len, src_len)
             attn_weights = attn_weights.float().masked_fill(
-                1-sequence_mask(src_true_len).unsqueeze(1).unsqueeze(2),float('-inf')) # FP16 support: cast to float and back
+                1-mask.to(device),float('-inf')) # FP16 support: cast to float and back
             attn_weights = attn_weights.view(batch_size * self.num_heads, tgt_len, src_len)
         ############################################
         ############## Here mask for inference ##################################
         if query_mask:
             attn_weights = attn_weights.view(batch_size, self.num_heads, tgt_len, src_len)
             assert tgt_len == src_len
-            mask = torch.arange(tgt_len) + 1
+            mask = sequence_mask(torch.arange(tgt_len) + 1).unsqueeze(0).unsqueeze(0).expand(batch_size, self.num_heads, tgt_len, src_len)
             attn_weights = attn_weights.float().masked_fill(
-                1-mask.unsqueeze(1).unsqueeze(2),float('-inf')) # FP16 support: cast to float and back
+                1-mask.to(device),float('-inf')) # FP16 support: cast to float and back
             attn_weights = attn_weights.view(batch_size * self.num_heads, tgt_len, src_len)
             
         scores_normalized = F.softmax(attn_weights, dim=-1)
@@ -88,10 +90,10 @@ class MultiheadAttention(nn.Module):
 
         return attn, attn_weights
 
-    def sequence_mask(lengths):
-        batch_size = lengths.numel()
-        max_len = lengths.max()
-        return (torch.arange(0, max_len).type_as(lengths).repeat(batch_size,1).lt(lengths.unsqueeze(1)))
+def sequence_mask(lengths):
+    batch_size = lengths.numel()
+    max_len = lengths.max()
+    return (torch.arange(0, max_len).type_as(lengths).repeat(batch_size,1).lt(lengths.unsqueeze(1)))
 
 
 

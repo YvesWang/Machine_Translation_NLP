@@ -1,5 +1,5 @@
 args = dict(
-    output_vocab_size = 20000,
+    output_vocab_size = 20004,
     encoder_embed_dim = 300,
     decoder_embed_dim = 300,
     encoder_attention_heads = 10,
@@ -9,6 +9,7 @@ args = dict(
     encoder_normalize_before = False, 
     decoder_normalize_before = False,
     encoder_hidden_dim = 300,           #   hidden dimension between to fc layers
+    decoder_hidden_dim = 300,           #   hidden dimension between to fc layers
     encoder_layers = 6,
     decoder_layers = 6,
     decoder_need_atten_weight = False

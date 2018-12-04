@@ -29,9 +29,8 @@ class Decoder(nn.Module):
         #     learned=args.decoder_learned_pos,
         # ) if not args.no_token_positional_embeddings else None
 
-        embed_dim = args.decoder_embed_dim
+        embed_dim = args['decoder_embed_dim']
         self.dropout = nn.Dropout(args['dropout'])
-        self.embed_tokens = embed_tokens
         self.embed_scale = math.sqrt(embed_dim) 
         
         self.layers = nn.ModuleList([])
@@ -81,7 +80,7 @@ class Decoder(nn.Module):
                 src_lengths= src_lengths
             )
             inner_states.append(x)
-            attn_states.append(atten)
+            attn_states.append(attn)
 
         if self.normalize:
             x = self.layer_norm(x)
@@ -128,8 +127,8 @@ class TransformerDecoderLayer(nn.Module):
         )
         self.encoder_attn_layer_norm = LayerNorm(self.embed_dim)
 
-        self.fc1 = Linear(self.embed_dim, args.decoder_ffn_embed_dim)
-        self.fc2 = Linear(args.decoder_ffn_embed_dim, self.embed_dim)
+        self.fc1 = Linear(self.embed_dim, args['decoder_hidden_dim'])
+        self.fc2 = Linear(args['decoder_hidden_dim'], self.embed_dim)
 
         self.final_layer_norm = LayerNorm(self.embed_dim)
         self.need_attn = args['decoder_need_atten_weight']
