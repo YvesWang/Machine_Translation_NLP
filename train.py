@@ -190,7 +190,7 @@ def start_train(transtype, paras):
     dropout_rate = paras['dropout_rate']
 
     
-    print(address_book)
+    #print(address_book)
     train_src_add = address_book['train_src']
     train_tgt_add = address_book['train_tgt']
     val_src_add = address_book['val_src']
@@ -200,13 +200,14 @@ def start_train(transtype, paras):
     if not os.path.exists(model_save_info['model_path']):
         os.makedirs(model_save_info['model_path'])
     ### save model hyperparameters
-    with open(model_save_info['model_path']+'model_params.pkl') as f:
+    with open(model_save_info['model_path']+'model_params.pkl', 'wb') as f:
         model_hyparams = paras
         model_hyparams['address_book'] = address_book
         model_hyparams['vocab_size'] = (src_vocab_size, tgt_vocab_size)
         model_hyparams['tgt_max_length'] = tgt_max_length
         model_hyparams['max_len_dataloader'] = (max_src_len_dataloader, max_tgt_len_dataloader)
         pickle.dump(model_hyparams, f)
+    print(model_hyparams)
 
     train_src = []
     with open(train_src_add) as f:
@@ -284,8 +285,8 @@ if __name__ == "__main__":
         teacher_forcing_ratio = 1,
         emb_size = 300,
         hidden_size = 256,
-        num_layers = 1,
-        num_direction = 1,
+        num_layers = 2,
+        num_direction = 2,
         deal_bi = 'linear', #{'linear', 'sum'}
         learning_rate = 1e-3,
         num_epochs = 100,
@@ -295,12 +296,12 @@ if __name__ == "__main__":
         dropout_rate = 0.1,
 
         model_save_info = dict(
-            model_path = 'nmt_models/vi-en-beam/',
+            model_path = 'nmt_models/vi-en-test/',
             epochs_per_save_model = 10,
             model_path_for_resume = None #'nmt_models/epoch_0.pth'
             )
         )
-    print('paras: ', paras)
+    #print('paras: ', paras)
     start_train(transtype, paras)
 
 

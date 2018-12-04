@@ -6,6 +6,7 @@ from config import device, embedding_freeze
 class EncoderRNN(nn.Module):
     def __init__(self, vocab_size, embed_size, hidden_size, num_layers, num_direction, deal_bi, embedding_weight, dropout_rate = 0.01):
         super(EncoderRNN, self).__init__()
+        self.device = device
         self.hidden_size = hidden_size
         self.dropout_rate = 0.1
         self.num_direction = num_direction
@@ -32,7 +33,7 @@ class EncoderRNN(nn.Module):
         rnn_out, _ = torch.nn.utils.rnn.pad_packed_sequence(rnn_out, batch_first=True) # (bz, src_len, num_directions * hidden_size)
         hidden = hidden.view(self.num_layers, self.num_direction, batch_size, self.hidden_size)
         if self.deal_bi == 'linear':
-            hidden = self.linear_compress(hidden.transpose(1,2).view(self.num_layers, batch_size, self.num_direction*self.hidden_size))
+            hidden = self.linear_compress(hidden.transpose(1,2).contiguous().view(self.num_layers, batch_size, self.num_direction*self.hidden_size))
             rnn_out = self.linear_compress(rnn_out)
         elif self.deal_bi == 'sum':
             hidden = torch.sum(hidden, dim=1)
