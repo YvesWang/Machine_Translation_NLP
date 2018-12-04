@@ -1,7 +1,7 @@
 import torch.nn as nn
 import torch
 import torch.nn.functional as F
-from config import device,embedding_freeze
+from config import embedding_freeze
 
 class DecoderRNN(nn.Module):
     def __init__(self, emb_size, hidden_size, vocab_size, num_layers, embedding_weight, dropout_rate = 0.1):
@@ -12,7 +12,6 @@ class DecoderRNN(nn.Module):
         self.embedding = nn.Embedding.from_pretrained(embedding_weight, freeze = embedding_freeze)
         self.gru = nn.GRU(emb_size, hidden_size, num_layers, batch_first=True)
         self.out = nn.Linear(hidden_size, vocab_size)
-        self.device = device
         self.logsoftmax = nn.LogSoftmax(dim=1)
 
     def forward(self, tgt_input, hidden, true_len = None, encoder_outputs = None):

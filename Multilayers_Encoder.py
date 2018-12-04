@@ -3,7 +3,6 @@ import torch
 import torch.nn.functional as F
 from config import device, embedding_freeze
 
-
 class EncoderRNN(nn.Module):
     def __init__(self, vocab_size, embed_size, hidden_size, num_layers, num_direction, deal_bi, embedding_weight, dropout_rate = 0.01):
         super(EncoderRNN, self).__init__()
@@ -11,7 +10,6 @@ class EncoderRNN(nn.Module):
         self.dropout_rate = 0.1
         self.num_direction = num_direction
         self.embedding = nn.Embedding.from_pretrained(embedding_weight, freeze = embedding_freeze)
-        self.device = device
         self.num_layers = num_layers
         self.dropout = nn.Dropout(dropout_rate)
         self.deal_bi = deal_bi
