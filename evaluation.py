@@ -97,7 +97,8 @@ def evaluate_beam_batch(beam_size, loader, encoder, decoder, criterion, tgt_max_
             beamers = [beam.beam(beam_size, min_length=0, n_best=1) for i in range(batch_size)]
             encoder_max_len, decoder_hidden_dim = encoder_outputs.size(1), encoder_outputs.size(2) #int
             assert(encoder_max_len==input_lengths.max())
-            encoder_hiddden_beam = encoder_hidden.unsqueeze(2).expand(1, batch_size, beam_size, decoder_hidden_dim).view(1, batch_size*beam_size, decoder_hidden_dim)
+            num_layers = encoder_hidden.size(0)
+            encoder_hiddden_beam = encoder_hidden.unsqueeze(2).expand(num_layers, batch_size, beam_size, decoder_hidden_dim).view(num_layers, batch_size*beam_size, decoder_hidden_dim)
             decoder_hidden = encoder_hiddden_beam
             input_lengths_beam = input_lengths.unsqueeze(1).expand(batch_size, beam_size).view(batch_size*beam_size)
             encoder_outputs_beam = encoder_outputs.unsqueeze(1).expand(batch_size, beam_size, encoder_max_len, decoder_hidden_dim).view(batch_size*beam_size, 

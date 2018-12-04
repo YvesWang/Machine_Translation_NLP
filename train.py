@@ -142,7 +142,7 @@ def trainIters(train_loader, val_loader, encoder, decoder, num_epochs,
             if n_iter % 500 == 0:
                 #print('Loss:', loss)
                 #eva_start = time.time()
-                val_bleu_sacre, val_bleu_nltk, val_loss = evaluate_batch(val_loader, encoder, decoder, criterion, tgt_max_length, tgtLang.index2word, srcLang.index2word)
+                val_bleu_sacre, val_bleu_nltk, val_loss = evaluate_batch(val_loader, encoder, decoder, criterion, tgt_max_len, tgtLang.index2word, srcLang.index2word)
                 #print((time.time()-eva_start)/60)
                 print('epoch: [{}/{}], step: [{}/{}], train_loss:{}, val_bleu_sacre: {}, val_bleu_nltk: {}, val_loss: {}'.format(
                     epoch, num_epochs, n_iter, len(train_loader), loss, val_bleu_sacre[0], val_bleu_nltk, val_loss))
@@ -154,9 +154,9 @@ def trainIters(train_loader, val_loader, encoder, decoder, num_epochs,
                # for p in encoder.named_parameters():
                #     print(p[0], ': ',  p[1].grad.data.abs().mean().item(), p[1].grad.data.abs().max().item(), p[1].data.abs().mean().item(), p[1].data.abs().max().item(), end=' ')
                # print('\n')
-        val_bleu_sacre, val_bleu_nltk, val_loss = evaluate_batch(val_loader, encoder, decoder, criterion, tgt_max_length, tgtLang.index2word, srcLang.index2word)
+        val_bleu_sacre, val_bleu_nltk, val_loss = evaluate_batch(val_loader, encoder, decoder, criterion, tgt_max_len, tgtLang.index2word, srcLang.index2word)
         print('epoch: [{}/{}] (Running time {:.3f} min), val_bleu_sacre: {}, val_bleu_nltk: {}, val_loss: {}'.format(epoch, num_epochs, (time.time()-start_time)/60, val_bleu_sacre, val_bleu_nltk, val_loss))
-        #val_bleu_sacre_beam, _, _ = evaluate_beam_batch(beam_size, val_loader, encoder, decoder, criterion, tgt_max_length, tgtLang.index2word)
+        #val_bleu_sacre_beam, _, _ = evaluate_beam_batch(beam_size, val_loader, encoder, decoder, criterion, tgt_max_len, tgtLang.index2word)
         #print('epoch: [{}/{}] (Running time {:.3f} min), val_bleu_sacre_beam: {}'.format(epoch, num_epochs, (time.time()-start_time)/60, val_bleu_sacre_beam))
         if max_val_bleu < val_bleu_sacre.score:
             max_val_bleu = val_bleu_sacre.score
@@ -195,14 +195,14 @@ def start_train(transtype, paras):
     model_save_info = paras['model_save_info']
     dropout_rate = paras['dropout_rate']
 
-    address_book={
-    train_src = 'Machine_Translation_NLP/iwsltzhen/iwslt-{}-{}/train.tok.{}'.format(transtype[0], transtype[1], transtype[0]),
-    train_tgt = 'Machine_Translation_NLP/iwsltzhen/iwslt-{}-{}/train.tok.{}'.format(transtype[0], transtype[1], transtype[1]),
-    val_src = 'Machine_Translation_NLP/iwsltzhen/iwslt-{}-{}/dev.tok.{}'.format(transtype[0], transtype[1], transtype[0]),
-    val_tgt = 'Machine_Translation_NLP/iwsltzhen/iwslt-{}-{}/dev.tok.{}'.format(transtype[0], transtype[1], transtype[1]),
-    src_emb = 'embedding/wiki.{}.vec'.format(transtype[0]),
-    tgt_emb = 'embedding/wiki.{}.vec'.format(transtype[1])
-    }
+    address_book=dict(
+        train_src = 'Machine_Translation_NLP/iwsltzhen/iwslt-{}-{}/train.tok.{}'.format(transtype[0], transtype[1], transtype[0]),
+        train_tgt = 'Machine_Translation_NLP/iwsltzhen/iwslt-{}-{}/train.tok.{}'.format(transtype[0], transtype[1], transtype[1]),
+        val_src = 'Machine_Translation_NLP/iwsltzhen/iwslt-{}-{}/dev.tok.{}'.format(transtype[0], transtype[1], transtype[0]),
+        val_tgt = 'Machine_Translation_NLP/iwsltzhen/iwslt-{}-{}/dev.tok.{}'.format(transtype[0], transtype[1], transtype[1]),
+        src_emb = 'embedding/wiki.{}.vec'.format(transtype[0]),
+        tgt_emb = 'embedding/wiki.{}.vec'.format(transtype[1])
+        )
     #print(address_book)
     train_src_add = address_book['train_src']
     train_tgt_add = address_book['train_tgt']
@@ -216,9 +216,6 @@ def start_train(transtype, paras):
     with open(model_save_info['model_path']+'model_params.pkl', 'wb') as f:
         model_hyparams = paras
         model_hyparams['address_book'] = address_book
-        #model_hyparams['vocab_size'] = (src_vocab_size, tgt_vocab_size)
-        #model_hyparams['tgt_max_length'] = tgt_max_length
-        #model_hyparams['max_len_dataloader'] = (max_src_len_dataloader, max_tgt_len_dataloader)
         pickle.dump(model_hyparams, f)
     print(model_hyparams)
 
@@ -244,8 +241,8 @@ def start_train(transtype, paras):
 
     print('The number of train samples: ', len(train_src))
     print('The number of val samples: ', len(val_src))
-    srcLang = construct_Lang('src', src_vocab_size, address_book['src_emb'], train_src)
-    tgtLang = construct_Lang('tgt', tgt_vocab_size, address_book['tgt_emb'], train_tgt)
+    srcLang = construct_Lang('src', src_max_vocab_size, address_book['src_emb'], train_src)
+    tgtLang = construct_Lang('tgt', tgt_max_vocab_size, address_book['tgt_emb'], train_tgt)
     train_input_index = text2index(train_src, srcLang.word2index) #add EOS token here 
     train_output_index = text2index(train_tgt, tgtLang.word2index)
     val_input_index = text2index(val_src, srcLang.word2index)
@@ -291,18 +288,18 @@ def start_train(transtype, paras):
 if __name__ == "__main__":
     transtype = ('vi', 'en')
     paras = dict( 
-        src_max_vocab_size = 26109,
-        tgt_max_vocab_size = 24418,
+        src_max_vocab_size = 26109, # 47127, #26109,
+        tgt_max_vocab_size = 24418, #31553, #24418,
         tgt_max_len = 100,
-        max_src_len_dataloader = 72, 
-        max_tgt_len_dataloader = 71, 
+        max_src_len_dataloader =72, #67, #72, 
+        max_tgt_len_dataloader = 71, #72, #71, 
 
         emb_size = 300,
         hidden_size = 256,
-        num_layers = 2,
-        num_direction = 2,
-        deal_bi = 'linear', #{'linear', 'sum'}
-        attention_type = 'dot_prod',  #general, concat
+        num_layers = 1,
+        num_direction = 1,
+        deal_bi = 'sum', #{'linear', 'sum'}
+        attention_type = 'dot_prod',  #'dot_prod', general, concat
         teacher_forcing_ratio = 1,
 
         learning_rate = 1e-3,
@@ -312,7 +309,7 @@ if __name__ == "__main__":
         dropout_rate = 0.1,
 
         model_save_info = dict(
-            model_path = 'nmt_models/vi-en-22test/',
+            model_path = 'nmt_models/vi-en-sum/',
             epochs_per_save_model = 10,
             model_path_for_resume = None #'nmt_models/epoch_0.pth'
             )
