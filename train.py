@@ -156,8 +156,8 @@ def trainIters(train_loader, val_loader, encoder, decoder, num_epochs,
                # print('\n')
         val_bleu_sacre, val_bleu_nltk, val_loss = evaluate_batch(val_loader, encoder, decoder, criterion, tgt_max_length, tgtLang.index2word, srcLang.index2word)
         print('epoch: [{}/{}] (Running time {:.3f} min), val_bleu_sacre: {}, val_bleu_nltk: {}, val_loss: {}'.format(epoch, num_epochs, (time.time()-start_time)/60, val_bleu_sacre, val_bleu_nltk, val_loss))
-        val_bleu_sacre_beam, _, _ = evaluate_beam_batch(beam_size, val_loader, encoder, decoder, criterion, tgt_max_length, tgtLang.index2word)
-        print('epoch: [{}/{}] (Running time {:.3f} min), val_bleu_sacre_beam: {}'.format(epoch, num_epochs, (time.time()-start_time)/60, val_bleu_sacre_beam))
+        #val_bleu_sacre_beam, _, _ = evaluate_beam_batch(beam_size, val_loader, encoder, decoder, criterion, tgt_max_length, tgtLang.index2word)
+        #print('epoch: [{}/{}] (Running time {:.3f} min), val_bleu_sacre_beam: {}'.format(epoch, num_epochs, (time.time()-start_time)/60, val_bleu_sacre_beam))
         if max_val_bleu < val_bleu_sacre.score:
             max_val_bleu = val_bleu_sacre.score
             ### TODO save best model
@@ -289,13 +289,13 @@ def start_train(transtype, paras):
     
 
 if __name__ == "__main__":
-    transtype = ('zh', 'en')
+    transtype = ('vi', 'en')
     paras = dict( 
-        src_max_vocab_size = 40000,
-        tgt_max_vocab_size = 20000,
-        tgt_max_len = 60,
-        max_src_len_dataloader = 60, 
-        max_tgt_len_dataloader = 60, 
+        src_max_vocab_size = 26109,
+        tgt_max_vocab_size = 24418,
+        tgt_max_len = 100,
+        max_src_len_dataloader = 72, 
+        max_tgt_len_dataloader = 71, 
 
         emb_size = 300,
         hidden_size = 256,
@@ -306,13 +306,13 @@ if __name__ == "__main__":
         teacher_forcing_ratio = 1,
 
         learning_rate = 1e-3,
-        num_epochs = 100,
+        num_epochs = 50,
         batch_size = 100, 
         beam_size = 1,
         dropout_rate = 0.1,
 
         model_save_info = dict(
-            model_path = 'nmt_models/vi-en-test/',
+            model_path = 'nmt_models/vi-en-22test/',
             epochs_per_save_model = 10,
             model_path_for_resume = None #'nmt_models/epoch_0.pth'
             )
