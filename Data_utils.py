@@ -5,7 +5,7 @@ import os.path
 import torch
 from torch.utils.data import Dataset, DataLoader
 from torch.nn.utils.rnn import pad_packed_sequence, pack_padded_sequence
-from config import device
+from config import device, PAD_token, EOS_token
 
 import random
 
@@ -40,14 +40,16 @@ class VocabDataset(Dataset):
         label = self.target_list[key]
         if self.src_clip is not None:
             train = train[:self.src_clip]
+        train.append(EOS_token)
         train_length = len(train)
 
         if self.tgt_clip is not None:
             label = label[:self.tgt_clip]
+        label.append(EOS_token)
         label_length = len(label)
         
 
-        return train,train_length,label,label_length
+        return train, train_length, label, label_length
 
 
 def vocab_collate_func(batch):
@@ -71,12 +73,12 @@ def vocab_collate_func(batch):
     # padding
     for datum in batch:
         padded_vec = np.pad(np.array(datum[0]),
-                                pad_width=((0,batch_max_input_length-datum[1])),
+                                pad_width=((PAD_token, batch_max_input_length-datum[1])),
                                 mode="constant", constant_values=0)
         data_list.append(padded_vec)
         
         padded_vec = np.pad(np.array(datum[2]),
-                                pad_width=((0,batch_max_output_length-datum[3])),
+                                pad_width=((PAD_token, batch_max_output_length-datum[3])),
                                 mode="constant", constant_values=0)
         label_list.append(padded_vec)
         
