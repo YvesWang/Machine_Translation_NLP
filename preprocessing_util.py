@@ -84,7 +84,8 @@ class Lang:
                 try:
                     emb_weight[i] = emb
                 except:
-                    print(len(emb), self.index2word[i], emb)
+                    pass
+                    #print(len(emb), self.index2word[i], emb)
         self.embedding_matrix = emb_weight
         return None
 

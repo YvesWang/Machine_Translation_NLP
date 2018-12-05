@@ -31,7 +31,7 @@ class EncoderRNN(nn.Module):
         embed = torch.nn.utils.rnn.pack_padded_sequence(embed, lengths.cpu().numpy(), batch_first=True)
         rnn_out, hidden = self.gru(embed, hidden)
         rnn_out, _ = torch.nn.utils.rnn.pad_packed_sequence(rnn_out, batch_first=True) # (bz, src_len, num_directions * hidden_size)
-        if self.direction == 2:
+        if self.num_direction == 2:
             hidden = hidden.view(self.num_layers, self.num_direction, batch_size, self.hidden_size)
             if self.deal_bi == 'linear':
                 hidden = self.linear_compress(hidden.transpose(1,2).contiguous().view(self.num_layers, batch_size, self.num_direction*self.hidden_size))
@@ -42,7 +42,7 @@ class EncoderRNN(nn.Module):
                 rnn_out = torch.sum(rnn_out.view(batch_size, src_len_batch, self.num_direction, self.hidden_size), dim=2)
             else:
                 print('deal_bi Error')
-        elif self.direction == 1:
+        elif self.num_direction == 1:
             pass
         else:
             pass
