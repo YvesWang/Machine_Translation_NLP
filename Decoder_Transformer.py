@@ -17,7 +17,7 @@ class Decoder(nn.Module):
             Default: ``False``
     """
 
-    def __init__(self, args, embedding_weight):
+    def __init__(self, args, vocab_size, embedding_weight):
         super(Decoder, self).__init__()
         ############# we need an embedding position matrix ##################
         ############# we need an embed scale matrix #########################
@@ -39,7 +39,8 @@ class Decoder(nn.Module):
             for _ in range(args['decoder_layers'])
         ])
 
-        self.project_out_dim = Linear(embed_dim, args['output_vocab_size'], bias=False) 
+        #self.project_out_dim = Linear(embed_dim, vocab_size, bias=False)
+        self.project_out_dim = nn.Linear(embed_dim, vocab_size, bias=False)
         self.logsoftmax = nn.LogSoftmax(dim=2)
         
         self.normalize = args['decoder_normalize_before']
@@ -47,7 +48,7 @@ class Decoder(nn.Module):
             self.layer_norm = LayerNorm(embed_dim)
         
 
-    def forward(self, output_tokens, src_lengths, encoder_out=None):
+    def forward(self, output_tokens, src_lengths=None, tgt_lengths=None, encoder_out=None):
         """
         Args:
             output_tokens (LongTensor): decoder input of shape
@@ -69,7 +70,7 @@ class Decoder(nn.Module):
         if self.embed_positions is not None:
             x += self.embed_positions(output_tokens)
         x = self.dropout(x)
-
+        
         inner_states = [x]
         attn_states = []
         # decoder layers
@@ -77,7 +78,8 @@ class Decoder(nn.Module):
             x, attn = layer(
                 x,
                 encoder_out,
-                src_lengths= src_lengths
+                src_lengths= src_lengths,
+                tgt_lengths= tgt_lengths
             )
             inner_states.append(x)
             attn_states.append(attn)
@@ -138,7 +140,7 @@ class TransformerDecoderLayer(nn.Module):
         self.decoder_dropout4 = nn.Dropout(self.dropout)
 
 
-    def forward(self, x, encoder_out, src_lengths):
+    def forward(self, x, encoder_out, src_lengths, tgt_lengths = None):
         """
         Args:
             x (Tensor): input to the layer of shape `(seq_len, batch, embed_dim)`
@@ -150,11 +152,12 @@ class TransformerDecoderLayer(nn.Module):
         """
         residual = x
         x = self.maybe_layer_norm(self.self_attn_layer_norm, x, before=True)
-
+    
         x, _ = self.self_attn(
             query=x,
             key=x,
             value=x,
+            src_true_len=tgt_lengths,
             query_mask=True,
             need_weights=False,
         )

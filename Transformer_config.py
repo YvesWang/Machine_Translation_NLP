@@ -1,17 +1,23 @@
+src_vocab_size = 20000
+tgt_vocab_size = 10000
+
+tgt_max_length = 60
+max_src_len_dataloader, max_tgt_len_dataloader = 60, 60
+
 args = dict(
-    output_vocab_size = 20004,
+    output_vocab_size = 10004,
     encoder_embed_dim = 300,
     decoder_embed_dim = 300,
     encoder_attention_heads = 10,
     decoder_attention_heads = 10,
-    dropout = 0.1,                      #   Encoder Decoder: dropout
-    attention_dropout = 0.1,            #   Attention: attention_dropout
+    dropout = 0,                      #   Encoder Decoder: dropout
+    attention_dropout = 0,            #   Attention: attention_dropout
     encoder_normalize_before = False, 
     decoder_normalize_before = False,
-    encoder_hidden_dim = 300,           #   hidden dimension between to fc layers
-    decoder_hidden_dim = 300,           #   hidden dimension between to fc layers
-    encoder_layers = 6,
-    decoder_layers = 6,
+    encoder_hidden_dim = 1200,           #   hidden dimension between to fc layers
+    decoder_hidden_dim = 1200,           #   hidden dimension between to fc layers
+    encoder_layers = 1,
+    decoder_layers = 1,
     decoder_need_atten_weight = False
     )
 

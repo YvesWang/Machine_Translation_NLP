@@ -26,9 +26,10 @@ class Encoder(nn.Module):
             TransformerEncoderLayer(args)
             for i in range(args['encoder_layers'])
         ])
-        self.register_buffer('version', torch.Tensor([2]))
-        self.layer_norm = nn.LayerNorm(args['encoder_embed_dim'])
+        
         self.normalize = args['encoder_normalize_before']
+        if self.normalize:
+            self.layer_norm = nn.LayerNorm(args['encoder_embed_dim'])
 
     
     def forward(self, src_tokens, src_lengths):
