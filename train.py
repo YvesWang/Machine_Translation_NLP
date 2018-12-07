@@ -39,7 +39,7 @@ def train(input_tensor, input_lengths, target_tensor, target_lengths,
 
     encoder_outputs, encoder_hidden = encoder(input_tensor, encoder_hidden, input_lengths)
     decoder_input = torch.tensor([[SOS_token]*batch_size], device=device).transpose(0,1)
-    decoder_hidden = decoder.initHidden(encoder_hidden)
+    decoder_hidden = encoder_hidden  #decoder.initHidden(encoder_hidden)
     #print(decoder_hidden.size())
     #print('encoddddddddddder finishhhhhhhhhhhhhhh')
     use_teacher_forcing = True if random.random() < teacher_forcing_ratio else False
@@ -289,7 +289,7 @@ if __name__ == "__main__":
     transtype = ('vi', 'en')
     paras = dict( 
         src_max_vocab_size = 26109, # 47127, #26109,
-        tgt_max_vocab_size = 24418, #31553, #24418,
+        tgt_max_vocab_size = 10000, #31553, #24418,
         tgt_max_len = 100,
         max_src_len_dataloader =72, #67, #72, 
         max_tgt_len_dataloader = 71, #72, #71, 
@@ -297,9 +297,9 @@ if __name__ == "__main__":
         emb_size = 300,
         hidden_size = 256,
         num_layers = 1,
-        num_direction = 2,
-        deal_bi = 'linear', #{'linear', 'sum'}
-        attention_type = 'concat', #'dot_prod', general, concat
+        num_direction = 1,
+        deal_bi = None, #{'linear', 'sum'}
+        attention_type = 'dot_prod', #'dot_prod', general, concat
         teacher_forcing_ratio = 1,
 
         learning_rate = 1e-3,
@@ -309,7 +309,7 @@ if __name__ == "__main__":
         dropout_rate = 0.1,
 
         model_save_info = dict(
-            model_path = 'nmt_models/vi-en-12-linear-concat/',
+            model_path = 'nmt_models/vi-en-11-dot-1wVocab/',
             epochs_per_save_model = 10,
             model_path_for_resume = None #'nmt_models/epoch_0.pth'
             )

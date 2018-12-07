@@ -16,8 +16,8 @@ args = dict(
     decoder_normalize_before = False,
     encoder_hidden_dim = 1200,           #   hidden dimension between to fc layers
     decoder_hidden_dim = 1200,           #   hidden dimension between to fc layers
-    encoder_layers = 1,
-    decoder_layers = 1,
+    encoder_layers = 3,
+    decoder_layers = 3,
     decoder_need_atten_weight = False
     )
 

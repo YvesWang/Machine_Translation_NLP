@@ -3,6 +3,9 @@ from torch import nn
 import torch.nn.functional as F
 from MultiheadAttention import MultiheadAttention
 import math
+from PositionalEmbedding import SinusoidalPositionalEmbedding
+# aa = SinusoidalPositionalEmbedding(6)
+# bb = aa(torch.LongTensor([10000,3,1]))
 
 class Encoder(nn.Module):
     def __init__(self, args, embedding_weight):
@@ -11,7 +14,7 @@ class Encoder(nn.Module):
         self.embedding = nn.Embedding.from_pretrained(embedding_weight, freeze = False)
         ############# we need an embedding position matrix ##################
         ############# we need an embed scale matrix #########################
-        self.embed_positions = None
+        self.embed_positions = SinusoidalPositionalEmbedding(args['encoder_embed_dim'])
         #embed_dim = embedding_weight.shape
         #self.max_source_positions = args.max_source_positions
         self.embed_scale = math.sqrt(args['encoder_embed_dim'])
@@ -49,7 +52,7 @@ class Encoder(nn.Module):
         # embed tokens and positions
         x = self.embed_scale * self.embedding(src_tokens)
         if self.embed_positions is not None:
-            x += self.embed_positions(src_tokens)
+            x += self.embed_positions(src_lengths)
         x = self.dropout(x)
         
         # encoder layers

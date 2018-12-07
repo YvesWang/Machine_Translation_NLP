@@ -3,6 +3,7 @@ from torch import nn
 import torch.nn.functional as F
 from MultiheadAttention import MultiheadAttention
 import math
+from PositionalEmbedding import SinusoidalPositionalEmbedding
 
 class Decoder(nn.Module):
     """
@@ -22,7 +23,7 @@ class Decoder(nn.Module):
         ############# we need an embedding position matrix ##################
         ############# we need an embed scale matrix #########################
         self.embedding = nn.Embedding.from_pretrained(embedding_weight, freeze = False)
-        self.embed_positions = None
+        self.embed_positions = SinusoidalPositionalEmbedding(args['decoder_embed_dim'])
         # self.embed_positions = PositionalEmbedding(
         #     args.max_target_positions, embed_dim, padding_idx,
         #     left_pad=left_pad,
@@ -68,7 +69,7 @@ class Decoder(nn.Module):
         # embed tokens and positions
         x = self.embed_scale * self.embedding(output_tokens)    # bsz tgt emb
         if self.embed_positions is not None:
-            x += self.embed_positions(output_tokens)
+            x += self.embed_positions(tgt_lengths)
         x = self.dropout(x)
         
         inner_states = [x]
