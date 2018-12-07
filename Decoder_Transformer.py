@@ -18,12 +18,16 @@ class Decoder(nn.Module):
             Default: ``False``
     """
 
-    def __init__(self, args, vocab_size, embedding_weight):
+    def __init__(self, args, vocab_size, embedding_weight, use_position_emb = False):
         super(Decoder, self).__init__()
         ############# we need an embedding position matrix ##################
         ############# we need an embed scale matrix #########################
         self.embedding = nn.Embedding.from_pretrained(embedding_weight, freeze = False)
-        self.embed_positions = SinusoidalPositionalEmbedding(args['decoder_embed_dim'])
+        
+        if use_position_emb:
+            self.embed_positions = SinusoidalPositionalEmbedding(args['decoder_embed_dim'])
+        else:
+            self.embed_positions = None
         # self.embed_positions = PositionalEmbedding(
         #     args.max_target_positions, embed_dim, padding_idx,
         #     left_pad=left_pad,

@@ -4,17 +4,18 @@ import torch.nn.functional as F
 from MultiheadAttention import MultiheadAttention
 import math
 from PositionalEmbedding import SinusoidalPositionalEmbedding
-# aa = SinusoidalPositionalEmbedding(6)
-# bb = aa(torch.LongTensor([10000,3,1]))
 
 class Encoder(nn.Module):
-    def __init__(self, args, embedding_weight):
+    def __init__(self, args, embedding_weight, use_position_emb = False):
         super(Encoder, self).__init__()
         self.dropout = nn.Dropout(args['dropout'])
         self.embedding = nn.Embedding.from_pretrained(embedding_weight, freeze = False)
         ############# we need an embedding position matrix ##################
         ############# we need an embed scale matrix #########################
-        self.embed_positions = SinusoidalPositionalEmbedding(args['encoder_embed_dim'])
+        if use_position_emb:
+            self.embed_positions = SinusoidalPositionalEmbedding(args['encoder_embed_dim'])
+        else:
+            self.embed_positions = None
         #embed_dim = embedding_weight.shape
         #self.max_source_positions = args.max_source_positions
         self.embed_scale = math.sqrt(args['encoder_embed_dim'])
