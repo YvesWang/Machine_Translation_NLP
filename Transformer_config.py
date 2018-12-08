@@ -6,18 +6,19 @@ max_src_len_dataloader, max_tgt_len_dataloader = 60, 60
 
 args = dict(
     output_vocab_size = 10004,
-    encoder_embed_dim = 300,
-    decoder_embed_dim = 300,
-    encoder_attention_heads = 10,
-    decoder_attention_heads = 10,
-    dropout = 0,                      #   Encoder Decoder: dropout
-    attention_dropout = 0,            #   Attention: attention_dropout
-    encoder_normalize_before = False, 
-    decoder_normalize_before = False,
-    encoder_hidden_dim = 1200,           #   hidden dimension between to fc layers
-    decoder_hidden_dim = 1200,           #   hidden dimension between to fc layers
-    encoder_layers = 3,
-    decoder_layers = 3,
+    encoder_embed_dim = 256,
+    decoder_embed_dim = 256,
+    encoder_attention_heads = 8,
+    decoder_attention_heads = 8,
+    dropout = 0.1,                      #   Encoder Decoder: dropout
+    attention_dropout = 0.1,            #   Attention: attention_dropout
+    encoder_normalize_before = True, 
+    decoder_normalize_before = True,
+    output_normalize = True,
+    encoder_hidden_dim = 1024,           #   hidden dimension between to fc layers
+    decoder_hidden_dim = 1024,           #   hidden dimension between to fc layers
+    encoder_layers = 4,
+    decoder_layers = 6,
     decoder_need_atten_weight = False
     )
 
