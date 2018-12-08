@@ -6,10 +6,13 @@ import math
 from PositionalEmbedding import SinusoidalPositionalEmbedding
 
 class Encoder(nn.Module):
-    def __init__(self, args, embedding_weight, use_position_emb = False):
+    def __init__(self, args, embedding_weight = None, vocab_size = None, use_position_emb = False):
         super(Encoder, self).__init__()
         self.dropout = nn.Dropout(args['dropout'])
-        self.embedding = nn.Embedding.from_pretrained(embedding_weight, freeze = False)
+        if embedding_weight is not None:
+            self.embedding = nn.Embedding.from_pretrained(embedding_weight, freeze = False)
+        else:
+            self.embedding = nn.Embedding(vocab_size,args['encoder_embed_dim'])
         ############# we need an embedding position matrix ##################
         ############# we need an embed scale matrix #########################
         if use_position_emb:
@@ -31,7 +34,7 @@ class Encoder(nn.Module):
             for i in range(args['encoder_layers'])
         ])
         
-        self.normalize = args['encoder_normalize_before']
+        self.normalize = args['output_normalize']
         if self.normalize:
             self.layer_norm = nn.LayerNorm(args['encoder_embed_dim'])
 
@@ -78,7 +81,7 @@ class TransformerEncoderLayer(nn.Module):
     """
 
     def __init__(self, args):
-        super().__init__()
+        super(TransformerEncoderLayer, self).__init__()
         self.embed_dim = args['encoder_embed_dim']
         self.self_attn = MultiheadAttention(
             self.embed_dim, 

@@ -18,11 +18,15 @@ class Decoder(nn.Module):
             Default: ``False``
     """
 
-    def __init__(self, args, vocab_size, embedding_weight, use_position_emb = False):
+    def __init__(self, args, vocab_size, embedding_weight = None, use_position_emb = False):
         super(Decoder, self).__init__()
         ############# we need an embedding position matrix ##################
         ############# we need an embed scale matrix #########################
-        self.embedding = nn.Embedding.from_pretrained(embedding_weight, freeze = False)
+        
+        if embedding_weight is not None:
+            self.embedding = nn.Embedding.from_pretrained(embedding_weight, freeze = False)
+        else:
+            self.embedding = nn.Embedding(vocab_size,args['decoder_embed_dim'])
         
         if use_position_emb:
             self.embed_positions = SinusoidalPositionalEmbedding(args['decoder_embed_dim'])
@@ -48,7 +52,7 @@ class Decoder(nn.Module):
         self.project_out_dim = nn.Linear(embed_dim, vocab_size, bias=False)
         self.logsoftmax = nn.LogSoftmax(dim=2)
         
-        self.normalize = args['decoder_normalize_before']
+        self.normalize = args['output_normalize']
         if self.normalize:
             self.layer_norm = LayerNorm(embed_dim)
         
@@ -117,7 +121,7 @@ class TransformerDecoderLayer(nn.Module):
     """
 
     def __init__(self, args):
-        super().__init__()
+        super(TransformerDecoderLayer, self).__init__()
         self.embed_dim = args['decoder_embed_dim']
         self.normalize_before = args['decoder_normalize_before']
         self.self_attn_layer_norm = LayerNorm(self.embed_dim)

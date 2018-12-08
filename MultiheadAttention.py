@@ -45,11 +45,11 @@ class MultiheadAttention(nn.Module):
         assert embed_dim == self.embed_dim
         assert key.size() == value.size()
 
-        Q = self.Linear_Q(query).view(batch_size*self.num_heads,tgt_len,self.head_dim) #  bsz*n tgt head
-        K = self.Linear_K(key).view(batch_size*self.num_heads,src_len,self.head_dim)  #  bsz*n src head
-        V = self.Linear_V(value).view(batch_size*self.num_heads,src_len,self.head_dim)  #  bsz*n src head
+        Q = self.Linear_Q(query).view(batch_size,tgt_len,self.num_heads,self.head_dim).transpose(1,2).contiguous().view(batch_size*self.num_heads,tgt_len,self.head_dim) #  bsz*n tgt head
+        K = self.Linear_K(key).view(batch_size,src_len,self.num_heads,self.head_dim).transpose(1,2).contiguous().view(batch_size*self.num_heads,src_len,self.head_dim)  #  bsz*n src head
+        V = self.Linear_V(value).view(batch_size,src_len,self.num_heads,self.head_dim).transpose(1,2).contiguous().view(batch_size*self.num_heads,src_len,self.head_dim) #  bsz*n src head
 
-        attn_weights = torch.bmm(Q, K.transpose(1, 2)) #  bsz*n tgt src
+        attn_weights = self.scaling * torch.bmm(Q, K.transpose(1, 2)) #  bsz*n tgt src
         assert attn_weights.size() == (batch_size * self.num_heads, tgt_len, src_len)
 
         #### Mask here #########################
@@ -79,8 +79,8 @@ class MultiheadAttention(nn.Module):
         attn = torch.bmm(scores_normalized, V) # bsz*n tgt head
         assert attn.size() == (batch_size * self.num_heads, tgt_len, self.head_dim)
 
-        attn = attn.contiguous().view(batch_size * tgt_len, embed_dim) # bsz, tgt, embed
-        attn = self.out_proj(attn).view(batch_size, tgt_len, embed_dim)
+        attn = attn.contiguous().view(batch_size , self.num_heads, tgt_len, self.head_dim).transpose(1,2).contiguous().view(batch_size, tgt_len, embed_dim) # bsz, tgt, embed
+        attn = self.out_proj(attn)
         
         if need_weights:
             # average attention weights over heads
