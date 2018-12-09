@@ -83,6 +83,7 @@ def evaluate_beam_batch(beam_size, loader, encoder, decoder, criterion, tgt_max_
     """
     """
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+    have_cell = True
     if encoder.get_rnn_type == 'GRU':
         have_cell = False
     #have_cell = True
