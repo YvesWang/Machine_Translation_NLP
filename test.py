@@ -73,9 +73,9 @@ val_loader = torch.utils.data.DataLoader(dataset=val_dataset,
 #                                            collate_fn=vocab_collate_func,
 #                                            shuffle=False)
 
-embedding_src_weight = torch.from_numpy(srcLang.embedding_matrix).type(torch.FloatTensor).to(device)
-embedding_tgt_weight = torch.from_numpy(tgtLang.embedding_matrix).type(torch.FloatTensor).to(device)
-print(embedding_src_weight.size(), embedding_tgt_weight.size())
+#embedding_src_weight = torch.from_numpy(srcLang.embedding_matrix).type(torch.FloatTensor).to(device)
+#embedding_tgt_weight = torch.from_numpy(tgtLang.embedding_matrix).type(torch.FloatTensor).to(device)
+#print(embedding_src_weight.size(), embedding_tgt_weight.size())
 
 # encoder = Encoder(args, embedding_src_weight)
 # decoder = Decoder(args, tgtLang.vocab_size, embedding_tgt_weight)
@@ -136,21 +136,21 @@ def trainIters(train_loader, val_loader, encoder, decoder, num_epochs, learning_
     
     criterion = nn.NLLLoss() #nn.NLLLoss(ignore_index=PAD_token)
     
-    def lr_foo(step,warmup_steps = 1000):
-        if step < 100:
-            return 0.01/(step+1)
-        else:
-            return min(1.0/np.sqrt(step), step*warmup_steps**(-1.5))
-    
-#     def lr_foo(step):
-#         if step < 2000:
-#             return 1e-3
-#         elif step < 6000:
-#             return 1e-4
-#         elif step < 10000:
-#             return 1e-5
+#     def lr_foo(step,warmup_steps = 1000):
+#         if step < 100:
+#             return 0.01/(step+1)
 #         else:
-#             return 1e-6
+#             return min(1.0/np.sqrt(step), step*warmup_steps**(-1.5))
+    
+    def lr_foo(step):
+        if step < 2000:
+            return 1e-3
+        elif step < 6000:
+            return 1e-4
+        elif step < 10000:
+            return 1e-5
+        else:
+            return 1e-6
             #return 1.0/np.sqrt(args['encoder_embed_dim'])* min(1.0/np.sqrt(step), step*warmup_steps**(-1.5))
     if lr_decay:
         lambda_T = lambda step: lr_foo(step)   

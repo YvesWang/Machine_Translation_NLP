@@ -40,15 +40,12 @@ class VocabDataset(Dataset):
         label = self.target_list[key]
         if self.src_clip is not None:
             train = train[:self.src_clip]
-        train.append(EOS_token)
         train_length = len(train)
 
         if self.tgt_clip is not None:
             label = label[:self.tgt_clip]
-        label.append(EOS_token)
         label_length = len(label)
         
-
         return train, train_length, label, label_length
 
 
@@ -65,20 +62,20 @@ def vocab_collate_func(batch):
     #device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
     for datum in batch:
-        train_length_list.append(datum[1])
-        label_length_list.append(datum[3])
+        train_length_list.append(datum[1]+1)
+        label_length_list.append(datum[3]+1)
     
     batch_max_input_length = np.max(train_length_list)
     batch_max_output_length = np.max(label_length_list)
     # padding
     for datum in batch:
-        padded_vec = np.pad(np.array(datum[0]),
-                                pad_width=((PAD_token, batch_max_input_length-datum[1])),
+        padded_vec = np.pad(np.array(datum[0]+[EOS_token]),
+                                pad_width=((PAD_token, batch_max_input_length-datum[1]-1)),
                                 mode="constant", constant_values=0)
         data_list.append(padded_vec)
         
-        padded_vec = np.pad(np.array(datum[2]),
-                                pad_width=((PAD_token, batch_max_output_length-datum[3])),
+        padded_vec = np.pad(np.array(datum[2]+[EOS_token]),
+                                pad_width=((PAD_token, batch_max_output_length-datum[3]-1)),
                                 mode="constant", constant_values=0)
         label_list.append(padded_vec)
         
