@@ -82,7 +82,10 @@ def evaluate_batch(loader, encoder, decoder, criterion, tgt_max_length, tgt_idx2
 def evaluate_beam_batch(beam_size, loader, encoder, decoder, criterion, tgt_max_length, tgt_idx2words):
     """
     """
-    device = torch.device("cuda" if torch.cuda.is_available() else "cpu")    
+    device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+    if encoder.get_rnn_type == 'GRU':
+        have_cell = False
+    #have_cell = True
     #loss_all = []
     #tgt_sents_nltk = []
     tgt_sents_sacre = []
@@ -91,43 +94,54 @@ def evaluate_beam_batch(beam_size, loader, encoder, decoder, criterion, tgt_max_
     with torch.no_grad():
         for input_tensor, input_lengths, target_tensor, target_lengths in loader:
             batch_size = input_tensor.size(0) #int 
-            encoder_hidden = encoder.initHidden(batch_size)
-            encoder_outputs, encoder_hidden = encoder(input_tensor, encoder_hidden, input_lengths)
+            encoder_hidden,encoder_cell = encoder.initHidden(batch_size)
+            encoder_outputs, encoder_hidden,encoder_cell = encoder(input_tensor, encoder_hidden, input_lengths, encoder_cell)
 
             beamers = [beam.beam(beam_size, min_length=0, n_best=1) for i in range(batch_size)]
             encoder_max_len, decoder_hidden_dim = encoder_outputs.size(1), encoder_outputs.size(2) #int
             assert(encoder_max_len==input_lengths.max())
             num_layers = encoder_hidden.size(0)
-            encoder_hiddden_beam = encoder_hidden.unsqueeze(2).expand(num_layers, batch_size, beam_size, decoder_hidden_dim).view(num_layers, batch_size*beam_size, decoder_hidden_dim)
+            encoder_hiddden_beam = encoder_hidden.unsqueeze(2).expand(num_layers, batch_size, beam_size, decoder_hidden_dim).contiguous().view(num_layers, batch_size*beam_size, decoder_hidden_dim)
             decoder_hidden = encoder_hiddden_beam
-            input_lengths_beam = input_lengths.unsqueeze(1).expand(batch_size, beam_size).view(batch_size*beam_size)
-            encoder_outputs_beam = encoder_outputs.unsqueeze(1).expand(batch_size, beam_size, encoder_max_len, decoder_hidden_dim).view(batch_size*beam_size, 
+            if have_cell:
+                encoder_cell_beam = encoder_cell.unsqueeze(2).expand(num_layers, batch_size, beam_size, decoder_hidden_dim).contiguous().view(num_layers, batch_size*beam_size, decoder_hidden_dim)
+                decoder_cell = encoder_cell_beam
+            input_lengths_beam = input_lengths.unsqueeze(1).expand(batch_size, beam_size).contiguous().view(batch_size*beam_size)
+            encoder_outputs_beam = encoder_outputs.unsqueeze(1).expand(batch_size, beam_size, encoder_max_len, decoder_hidden_dim).contiguous().view(batch_size*beam_size, 
                 encoder_max_len, decoder_hidden_dim)
 
             #loss = 0
             for decoding_token_index in range(tgt_max_length):
                 decoder_input = torch.stack([beamer.next_ts[-1] for beamer in beamers], dim=0).unsqueeze(-1).view(batch_size*beam_size, 1).to(device)
-                decoder_output, decoder_hidden, _ = decoder(decoder_input, decoder_hidden, input_lengths_beam, encoder_outputs_beam)
+                decoder_output, decoder_hidden, _, decoder_cell = decoder(decoder_input, decoder_hidden, input_lengths_beam, encoder_outputs_beam, decoder_cell)
                 vocab_size = decoder_output.size(1)
-                decoder_output_beam, decoder_hidden_beam = decoder_output.view(batch_size, beam_size, vocab_size), decoder_hidden.view(1, 
-                    batch_size, beam_size, decoder_hidden_dim)
+                decoder_output_beam, decoder_hidden_beam = decoder_output.view(batch_size, beam_size, vocab_size), decoder_hidden.view(1, batch_size, beam_size, decoder_hidden_dim)
+                if have_cell:
+                    decoder_cell_beam = decoder_cell.view(1, batch_size, beam_size, decoder_hidden_dim)
                 decoder_input_list = []
                 decoder_hidden_list = []
+                decoder_cell_list = []
                 flag_stop = True
                 for i_batch in range(batch_size):
                     beamer = beamers[i_batch]
                     if beamer.stopByEOS == False:
                         beamer.advance(decoder_output_beam[i_batch])
                         decoder_hidden_list.append(decoder_hidden_beam[:, i_batch, :, :].index_select(dim=1,index=beamer.prev_ps[-1]))
+                        if have_cell:
+                            decoder_cell_list.append(decoder_cell_beam[:, i_batch, :, :].index_select(dim=1,index=beamer.prev_ps[-1]))
                         decoder_input_list.append(beamer.next_ts[-1])
                         flag_stop = False
                     else:
                         decoder_hidden_list.append(decoder_hidden_beam[:,i_batch,:,:])
+                        if have_cell:
+                            decoder_cell_list.append(decoder_cell_beam[:,i_batch,:,:])
                         decoder_input_list.append(torch.LongTensor(beam_size).fill_(PAD_token).to(device))
                 if flag_stop:
                     break
                 decoder_input = torch.stack(decoder_input_list, 0).view(batch_size*beam_size, 1)
                 decoder_hidden = torch.stack(decoder_hidden_list, 1).view(1, batch_size*beam_size, decoder_hidden_dim)
+                if have_cell:
+                    decoder_cell = torch.stack(decoder_cell_list, 1).view(1, batch_size*beam_size, decoder_hidden_dim)
 
             target_tensor_numpy = target_tensor.cpu().numpy()
             for i_batch in range(batch_size):

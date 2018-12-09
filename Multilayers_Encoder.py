@@ -82,7 +82,15 @@ class EncoderRNN(nn.Module):
         return rnn_out, hidden, cell # (bz, src_len, hidden_size) (num_layers, bz, hidden_size)
 
     def initHidden(self, batch_size):
-        hidden = torch.randn(self.num_direction*self.num_layers, batch_size, self.hidden_size, device=self.device)
-        cell = torch.randn(self.num_direction*self.num_layers, batch_size, self.hidden_size, device=self.device)
+        cell = None
+        if self.rnn_type == 'GRU':
+            hidden = torch.randn(self.num_direction*self.num_layers, batch_size, self.hidden_size, device=self.device)
+        else:
+            hidden = torch.randn(self.num_direction*self.num_layers, batch_size, self.hidden_size, device=self.device)
+            cell = torch.randn(self.num_direction*self.num_layers, batch_size, self.hidden_size, device=self.device)
         return hidden, cell
+    
+    def get_rnn_type(self):
+        return self.rnn_type
+        
 
