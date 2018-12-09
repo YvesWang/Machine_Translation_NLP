@@ -300,7 +300,7 @@ if __name__ == "__main__":
         hidden_size = 256,
         num_layers = 2,
         num_direction = 2,
-        deal_bi = None, #{'linear', 'sum'}
+        deal_bi = 'sum', #{'linear', 'sum'}
         rnn_type = 'LSTM', # LSTM
         attention_type = 'dot_prod', #'dot_prod', general, concat
         teacher_forcing_ratio = 1,

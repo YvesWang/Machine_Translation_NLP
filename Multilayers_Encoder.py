@@ -39,7 +39,8 @@ class EncoderRNN(nn.Module):
             else:
                 print('RNN TYPE ERROR')
             if deal_bi == 'linear':
-                self.linear_compress = nn.Linear(2*self.hidden_size, self.hidden_size, bias=False)          
+                self.linear_compress = nn.Linear(2*self.hidden_size, self.hidden_size, bias=False) 
+                self.linear_compress_cell = nn.Linear(2*self.hidden_size, self.hidden_size, bias=False) 
                 #self.linear_hidden_compress = nn.Linear(2*self.hidden_size, self.hidden_size, bias=False)
         else:
             print('number of direction out of bound')
@@ -57,11 +58,17 @@ class EncoderRNN(nn.Module):
         rnn_out, _ = torch.nn.utils.rnn.pad_packed_sequence(rnn_out, batch_first=True) # (bz, src_len, num_directions * hidden_size)
         if self.num_direction == 2:
             hidden = hidden.view(self.num_layers, self.num_direction, batch_size, self.hidden_size)
+            if cell is not None:
+                cell = cell.view(self.num_layers, self.num_direction, batch_size, self.hidden_size)
             if self.deal_bi == 'linear':
                 hidden = self.linear_compress(hidden.transpose(1,2).contiguous().view(self.num_layers, batch_size, self.num_direction*self.hidden_size))
                 rnn_out = self.linear_compress(rnn_out)
+                if cell is not None:
+                    cell = self.linear_compress_cell(cell.transpose(1,2).contiguous().view(self.num_layers, batch_size, self.num_direction*self.hidden_size))
             elif self.deal_bi == 'sum':
                 hidden = torch.sum(hidden, dim=1)
+                if cell is not None:
+                    cell = torch.sum(cell, dim=1)
                 src_len_batch = rnn_out.size(1)
                 rnn_out = torch.sum(rnn_out.view(batch_size, src_len_batch, self.num_direction, self.hidden_size), dim=2)
             else:
