@@ -28,10 +28,10 @@ def evaluate_batch(loader, encoder, decoder, criterion, tgt_max_length, tgt_idx2
     with torch.no_grad():
         for input_tensor, input_lengths, target_tensor, target_lengths in loader:
             batch_size = input_tensor.size(0)
-            encoder_hidden = encoder.initHidden(batch_size)
-            encoder_outputs, encoder_hidden = encoder(input_tensor, encoder_hidden, input_lengths)
+            encoder_hidden, encoder_cell = encoder.initHidden(batch_size)
+            encoder_outputs, encoder_hidden, encoder_cell = encoder(input_tensor, encoder_hidden, input_lengths, encoder_cell)
             decoder_input = torch.tensor([[SOS_token]*batch_size], device=device).transpose(0,1)
-            decoder_hidden = encoder_hidden
+            decoder_hidden,decoder_cell = encoder_hidden,encoder_cell
 
             decoding_token_index = 0
             loss = 0 
@@ -39,7 +39,7 @@ def evaluate_batch(loader, encoder, decoder, criterion, tgt_max_length, tgt_idx2
             #sent_not_end_index = list(range(batch_size))
             idx_token_pred = np.zeros((batch_size, tgt_max_length), dtype=np.int)
             while decoding_token_index < tgt_max_length:
-                decoder_output, decoder_hidden, _ = decoder(decoder_input, decoder_hidden, input_lengths, encoder_outputs)
+                decoder_output, decoder_hidden, _, decoder_cell = decoder(decoder_input, decoder_hidden, input_lengths, encoder_outputs,decoder_cell)
                 topv, topi = decoder_output.topk(1)
                 decoder_input = topi.detach()  # detach from history as input
                 idx_token_pred_step = decoder_input.cpu().squeeze(1).numpy()

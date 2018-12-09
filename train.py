@@ -30,16 +30,16 @@ def train(input_tensor, input_lengths, target_tensor, target_lengths,
     finish train for a batch
     '''
     batch_size = input_tensor.size(0)
-    encoder_hidden = encoder.initHidden(batch_size)
-
+    encoder_hidden, encoder_cell = encoder.initHidden(batch_size)
+    
     encoder_optimizer.zero_grad()
     decoder_optimizer.zero_grad()
 
     loss = 0
+    encoder_outputs, encoder_hidden, encoder_cell = encoder(input_tensor, encoder_hidden, input_lengths, encoder_cell)
 
-    encoder_outputs, encoder_hidden = encoder(input_tensor, encoder_hidden, input_lengths)
     decoder_input = torch.tensor([[SOS_token]*batch_size], device=device).transpose(0,1)
-    decoder_hidden = encoder_hidden  #decoder.initHidden(encoder_hidden)
+    decoder_hidden,decoder_cell = encoder_hidden, encoder_cell  #decoder.initHidden(encoder_hidden)
     #print(decoder_hidden.size())
     #print('encoddddddddddder finishhhhhhhhhhhhhhh')
     use_teacher_forcing = True if random.random() < teacher_forcing_ratio else False
@@ -64,8 +64,8 @@ def train(input_tensor, input_lengths, target_tensor, target_lengths,
         tgt_max_len_batch = target_lengths.cpu().max().item()
         assert(tgt_max_len_batch==target_tensor.size(1))
         while decoding_token_index < tgt_max_len_batch:
-            decoder_output, decoder_hidden, decoder_attention = decoder(
-                decoder_input, decoder_hidden, input_lengths, encoder_outputs)
+            decoder_output, decoder_hidden, decoder_attention, decoder_cell = decoder(
+                decoder_input, decoder_hidden, input_lengths, encoder_outputs, decoder_cell)
             loss += criterion(decoder_output, target_tensor[:,decoding_token_index])
             decoder_input = target_tensor[:,decoding_token_index].unsqueeze(1)  # Teacher forcing
             decoding_token_index += 1
@@ -94,8 +94,8 @@ def train(input_tensor, input_lengths, target_tensor, target_lengths,
         tgt_max_len_batch = target_lengths.cpu().max().item()
         assert(tgt_max_len_batch==target_tensor.size(1))
         while decoding_token_index < tgt_max_len_batch:
-            decoder_output, decoder_hidden, decoder_attention_weights = decoder(
-                decoder_input, decoder_hidden, input_lengths, encoder_outputs)
+            decoder_output, decoder_hidden, decoder_attention_weights, decoder_cell = decoder(
+                decoder_input, decoder_hidden, input_lengths, encoder_outputs, decoder_cell)
             topv, topi = decoder_output.topk(1)
             decoder_input = topi.detach()  # detach from history as input
             loss += criterion(decoder_output, target_tensor[:,decoding_token_index])
@@ -190,6 +190,7 @@ def start_train(transtype, paras):
     learning_rate = paras['learning_rate']
     num_epochs = paras['num_epochs']
     batch_size = paras['batch_size']
+    rnn_type = paras['rnn_type']
     attention_type = paras['attention_type']
     beam_size = paras['beam_size']
     model_save_info = paras['model_save_info']
@@ -271,11 +272,12 @@ def start_train(transtype, paras):
     embedding_tgt_weight = torch.from_numpy(tgtLang.embedding_matrix).type(torch.FloatTensor).to(device)
     print(embedding_src_weight.size(), embedding_tgt_weight.size())
     if attention_type:
-        encoder = EncoderRNN(srcLang.vocab_size, emb_size, hidden_size, num_layers, num_direction, deal_bi, embedding_weight = embedding_src_weight, dropout_rate = dropout_rate)
-        decoder = DecoderAtten(emb_size, hidden_size, tgtLang.vocab_size, num_layers, embedding_weight = embedding_tgt_weight, atten_type = attention_type, dropout_rate = dropout_rate)
+        encoder = EncoderRNN(srcLang.vocab_size, emb_size, hidden_size, num_layers, num_direction, deal_bi, rnn_type = rnn_type,  embedding_weight = embedding_src_weight, dropout_rate = dropout_rate)
+        decoder = DecoderAtten(emb_size, hidden_size, tgtLang.vocab_size, num_layers, rnn_type = rnn_type, embedding_weight = embedding_tgt_weight, atten_type = attention_type, dropout_rate = dropout_rate)
     else:      
-        encoder = EncoderRNN(srcLang.vocab_size, emb_size,hidden_size, num_layers, num_direction, deal_bi, embedding_weight = embedding_src_weight, dropout_rate = dropout_rate)
-        decoder = DecoderRNN(emb_size, hidden_size, tgtLang.vocab_size, num_layers, embedding_weight = embedding_tgt_weight, dropout_rate = dropout_rate)
+        encoder = EncoderRNN(srcLang.vocab_size, emb_size,hidden_size, num_layers, num_direction, deal_bi, rnn_type = rnn_type, embedding_weight = embedding_src_weight, dropout_rate = dropout_rate)
+        decoder = DecoderRNN(emb_size, hidden_size, tgtLang.vocab_size, num_layers, rnn_type = rnn_type, embedding_weight = embedding_tgt_weight, dropout_rate = dropout_rate)
+
     
     encoder, decoder = encoder.to(device), decoder.to(device)
     print('Encoder:')
@@ -296,9 +298,10 @@ if __name__ == "__main__":
 
         emb_size = 300,
         hidden_size = 256,
-        num_layers = 1,
-        num_direction = 1,
+        num_layers = 2,
+        num_direction = 2,
         deal_bi = None, #{'linear', 'sum'}
+        rnn_type = 'LSTM', # LSTM
         attention_type = 'dot_prod', #'dot_prod', general, concat
         teacher_forcing_ratio = 1,
 
@@ -309,7 +312,7 @@ if __name__ == "__main__":
         dropout_rate = 0.1,
 
         model_save_info = dict(
-            model_path = 'nmt_models/vi-en-11-dot-1wVocab/',
+            model_path = 'nmt_models/vi-en-dot-1wVocab_22/',
             epochs_per_save_model = 10,
             model_path_for_resume = None #'nmt_models/epoch_0.pth'
             )
