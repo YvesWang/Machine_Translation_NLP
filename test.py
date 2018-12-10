@@ -54,7 +54,7 @@ val_output_index = text2index(val_tgt, tgtLang.word2index)
 
 #trainIters(train_loader, val_loader, encoder, decoder, num_epochs, learning_rate, srcLang, tgtLang)
 
-batch_size = 128
+batch_size = 160
 train_dataset = VocabDataset(train_input_index,train_output_index, max_src_len_dataloader, max_tgt_len_dataloader)
 train_loader = torch.utils.data.DataLoader(dataset=train_dataset,
                                            batch_size=batch_size,
@@ -80,8 +80,8 @@ val_loader = torch.utils.data.DataLoader(dataset=val_dataset,
 # encoder = Encoder(args, embedding_src_weight)
 # decoder = Decoder(args, tgtLang.vocab_size, embedding_tgt_weight)
 
-encoder = Encoder(args, vocab_size = srcLang.vocab_size)
-decoder = Decoder(args, tgtLang.vocab_size)
+encoder = Encoder(args, vocab_size = srcLang.vocab_size, use_position_emb = True)
+decoder = Decoder(args, tgtLang.vocab_size, use_position_emb = True)
 
 encoder, decoder = encoder.to(device), decoder.to(device)
 print('Encoder:')
@@ -142,16 +142,27 @@ def trainIters(train_loader, val_loader, encoder, decoder, num_epochs, learning_
 #         else:
 #             return min(1.0/np.sqrt(step), step*warmup_steps**(-1.5))
     
-    def lr_foo(step):
-        if step < 2000:
-            return 1e-3
-        elif step < 6000:
-            return 1e-4
-        elif step < 10000:
-            return 1e-5
+#     def lr_foo(step):
+#         if step < 2000:
+#             return 1e-3
+#         elif step < 6000:
+#             return 1e-4
+#         elif step < 10000:
+#             return 1e-5
+#         else:
+#             return 1e-6
+    def lr_foo(step,warmup_steps = 4000):
+        if step < 1000:
+            return 0.001/(step+1)
         else:
-            return 1e-6
-            #return 1.0/np.sqrt(args['encoder_embed_dim'])* min(1.0/np.sqrt(step), step*warmup_steps**(-1.5))
+            return 1.0/np.sqrt(args['encoder_embed_dim'])* min(1.0/np.sqrt(step), step*warmup_steps**(-1.5))
+    
+#     def lr_foo(step,warmup_steps = 4000):
+#         if step < 1000:
+#             return 0.001/(step+1)
+#         else:
+#             return min(1.0/np.sqrt(step), step*warmup_steps**(-1.5))
+    
     if lr_decay:
         lambda_T = lambda step: lr_foo(step)   
         scheduler_encoder = LambdaLR(encoder_optimizer, lr_lambda=lambda_T)
@@ -170,7 +181,7 @@ def trainIters(train_loader, val_loader, encoder, decoder, num_epochs, learning_
             loss = train(input_tensor, input_lengths, target_tensor, target_lengths, 
                          encoder, decoder, encoder_optimizer, decoder_optimizer, 
                          criterion)
-            if n_iter % 200 == 0:
+            if n_iter % 100 == 0:
                 print('Loss:', loss)
                 
 #                 print('Decoder parameters grad:')
@@ -206,6 +217,17 @@ def fun_index2token(index_list, idx2words):
             token_list.append(idx2words[index])
     return token_list
 
+#def evaluation(val_loader, encoder, decoder, criterion, tgt_max_length, tgtLang.index2word, srcLang.index2word):
+import sacrebleu
+def fun_index2token(index_list, idx2words):
+    token_list = []
+    for index in index_list:
+        if index == EOS_token:
+            break
+        else:
+            token_list.append(idx2words[index])
+    return token_list
+
 def evaluate_batch(loader, encoder, decoder, tgt_max_length, tgt_idx2words, src_idx2words):
     tgt_sents_sacre = []
     tgt_pred_sents_sacre = []
@@ -216,11 +238,11 @@ def evaluate_batch(loader, encoder, decoder, tgt_max_length, tgt_idx2words, src_
         encoder_outputs, src_lengths = encoder(input_tensor, input_lengths)    
         ############# PADDDDDDDD #########################
         target_input = (torch.ones([batch_size, tgt_max_length],dtype = torch.long) * PAD_token).to(device)
-        
+        target_max_lengths = (torch.ones([batch_size], dtype=torch.long) * tgt_max_length).to(device)
         temp_input = target_input        
         for auto_idx in range(tgt_max_length):
             temp_input_de = torch.cat((torch.ones(batch_size,1).type_as(temp_input)*SOS_token, temp_input[:,:-1]),1)
-            temp_out, _ = decoder(temp_input_de, src_lengths, encoder_out = encoder_outputs)
+            temp_out, _ = decoder(temp_input_de, src_lengths, encoder_out = encoder_outputs, tgt_max_lengths = target_max_lengths)
             topv, topi = temp_out.topk(1,dim = -1)
             temp_input[:,auto_idx] = topi.squeeze(-1)[:,auto_idx]
             #print(temp_out[0][0])
@@ -248,5 +270,7 @@ def evaluate_batch(loader, encoder, decoder, tgt_max_length, tgt_idx2words, src_
     print('BLUE: ', sacre_bleu_score)
     print('*****************************')
 
-num_epochs, learning_rate = 200, 0.2
+
+
+num_epochs, learning_rate = 200, 1
 trainIters(train_loader, val_loader, encoder, decoder, num_epochs, learning_rate, srcLang, tgtLang)

@@ -1,8 +1,8 @@
 src_vocab_size = 20000
 tgt_vocab_size = 10000
 
-tgt_max_length = 60
-max_src_len_dataloader, max_tgt_len_dataloader = 60, 60
+tgt_max_length = 30
+max_src_len_dataloader, max_tgt_len_dataloader = 50, 30
 
 args = dict(
     output_vocab_size = 10004,
@@ -17,8 +17,8 @@ args = dict(
     output_normalize = True,
     encoder_hidden_dim = 2048,           #   hidden dimension between to fc layers
     decoder_hidden_dim = 2048,           #   hidden dimension between to fc layers
-    encoder_layers = 2,
-    decoder_layers = 6,
+    encoder_layers = 4,
+    decoder_layers = 4,
     decoder_need_atten_weight = False
     )
 
