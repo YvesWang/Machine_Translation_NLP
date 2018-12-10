@@ -57,7 +57,7 @@ class Decoder(nn.Module):
             self.layer_norm = LayerNorm(embed_dim)
         
 
-    def forward(self, output_tokens, src_lengths=None, tgt_lengths=None, encoder_out=None):
+    def forward(self, output_tokens, src_lengths=None, tgt_lengths=None, encoder_out=None, tgt_max_lengths = None):
         """
         Args:
             output_tokens (LongTensor): decoder input of shape
@@ -75,9 +75,14 @@ class Decoder(nn.Module):
 
 
         # embed tokens and positions
-        x = self.embed_scale * self.embedding(output_tokens)    # bsz tgt emb
+        x = self.embedding(output_tokens)    # bsz tgt emb
         if self.embed_positions is not None:
-            x += self.embed_positions(tgt_lengths)
+            if tgt_max_lengths is not None:
+                x += self.embed_positions(tgt_max_lengths)
+            else:
+                x += self.embed_positions(tgt_lengths)
+        
+        x = self.embed_scale * x
         x = self.dropout(x)
         
         inner_states = [x]

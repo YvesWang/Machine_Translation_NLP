@@ -288,7 +288,7 @@ def start_train(transtype, paras):
     
 
 if __name__ == "__main__":
-    transtype = ('vi', 'en')
+    transtype = ('zh', 'en')
     paras = dict( 
         src_max_vocab_size = 26109, # 47127, #26109,
         tgt_max_vocab_size = 10000, #31553, #24418,
@@ -300,7 +300,7 @@ if __name__ == "__main__":
         hidden_size = 256,
         num_layers = 2,
         num_direction = 2,
-        deal_bi = 'sum', #{'linear', 'sum'}
+        deal_bi = 'linear', #{'linear', 'sum'}
         rnn_type = 'LSTM', # LSTM
         attention_type = 'dot_prod', #'dot_prod', general, concat
         teacher_forcing_ratio = 1,
@@ -312,7 +312,7 @@ if __name__ == "__main__":
         dropout_rate = 0.1,
 
         model_save_info = dict(
-            model_path = 'nmt_models/vi-en-dot-1wVocab_22/',
+            model_path = 'nmt_models/zh-en-dot-1wVocab_22_linear/',
             epochs_per_save_model = 10,
             model_path_for_resume = None #'nmt_models/epoch_0.pth'
             )
