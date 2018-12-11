@@ -40,7 +40,7 @@ class DecoderRNN(nn.Module):
     
 
 class DecoderAtten(nn.Module):
-    def __init__(self, emb_size, hidden_size, vocab_size, num_layers, rnn_type = 'GRU', embedding_weight = 'None', atten_type = 'dot_prod', dropout_rate = 0.1):
+    def __init__(self, emb_size, hidden_size, vocab_size, num_layers, rnn_type = 'GRU', embedding_weight = None, atten_type = 'dot_prod', dropout_rate = 0.1):
         super(DecoderAtten, self).__init__()
         self.hidden_size = hidden_size
         self.dropout = nn.Dropout(dropout_rate)

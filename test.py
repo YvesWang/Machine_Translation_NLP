@@ -54,7 +54,7 @@ val_output_index = text2index(val_tgt, tgtLang.word2index)
 
 #trainIters(train_loader, val_loader, encoder, decoder, num_epochs, learning_rate, srcLang, tgtLang)
 
-batch_size = 160
+batch_size = 64
 train_dataset = VocabDataset(train_input_index,train_output_index, max_src_len_dataloader, max_tgt_len_dataloader)
 train_loader = torch.utils.data.DataLoader(dataset=train_dataset,
                                            batch_size=batch_size,
