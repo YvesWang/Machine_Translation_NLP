@@ -12,7 +12,7 @@ class DecoderRNN(nn.Module):
         if embedding_weight is not None:
             self.embedding = nn.Embedding.from_pretrained(embedding_weight, freeze = embedding_freeze)
         else:
-            self.embedding = nn.Embedding(vocab_size,embed_size)
+            self.embedding = nn.Embedding(vocab_size,emb_size)
         self.rnn_type = rnn_type
         if rnn_type == 'GRU':
             self.gru = nn.GRU(emb_size, hidden_size, num_layers, batch_first=True, dropout = dropout_rate)

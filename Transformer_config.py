@@ -1,8 +1,8 @@
 src_vocab_size = 20000
 tgt_vocab_size = 10000
 
-tgt_max_length = 30
-max_src_len_dataloader, max_tgt_len_dataloader = 50, 30
+tgt_max_length = 20
+max_src_len_dataloader, max_tgt_len_dataloader = 25, 20
 
 args = dict(
     output_vocab_size = 10004,
