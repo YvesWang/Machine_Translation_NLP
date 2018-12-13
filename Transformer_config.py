@@ -1,26 +1,28 @@
-src_vocab_size = 20000
-tgt_vocab_size = 10000
+src_vocab_size = 47127 #47127 #26109
+tgt_vocab_size = 31553 #31553 #24418
 
-tgt_max_length = 20
-max_src_len_dataloader, max_tgt_len_dataloader = 25, 20
+tgt_max_length = 72 #72 #71
+max_src_len_dataloader, max_tgt_len_dataloader = 67, 72 #67, 72#72, 71 
 
 args = dict(
-    output_vocab_size = 10004,
+    output_vocab_size = 31557, #31557, #24422,
     encoder_embed_dim = 512,
     decoder_embed_dim = 512,
-    encoder_attention_heads = 8,
-    decoder_attention_heads = 8,
-    dropout = 0.2,                      #   Encoder Decoder: dropout
-    attention_dropout = 0.2,            #   Attention: attention_dropout
-    encoder_normalize_before = True, 
-    decoder_normalize_before = True,
+    encoder_attention_heads = 4,
+    decoder_attention_heads = 4,
+    dropout = 0.3,                      #   Encoder Decoder: dropout
+    attention_dropout = 0.3,            #   Attention: attention_dropout
+    encoder_normalize_before = False, 
+    decoder_normalize_before = False,
     output_normalize = True,
-    encoder_hidden_dim = 2048,           #   hidden dimension between to fc layers
-    decoder_hidden_dim = 2048,           #   hidden dimension between to fc layers
-    encoder_layers = 4,
-    decoder_layers = 4,
+    encoder_hidden_dim = 1024,           #   hidden dimension between to fc layers
+    decoder_hidden_dim = 1024,           #   hidden dimension between to fc layers
+    encoder_layers = 2,
+    decoder_layers = 2,
     decoder_need_atten_weight = False
     )
+
+model_path = '/scratch/tw1682/nmt_models/zh-en-512-2-dropout3/'
 
 
 

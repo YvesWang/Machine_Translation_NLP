@@ -12,6 +12,7 @@ from Encoder_Transformer import Encoder
 from Decoder_Transformer import Decoder
 from Transformer_config import *
 from torch.optim.lr_scheduler import LambdaLR
+import pickle 
 
 train_src_add = address_book['train_src']
 train_tgt_add = address_book['train_tgt']
@@ -54,7 +55,7 @@ val_output_index = text2index(val_tgt, tgtLang.word2index)
 
 #trainIters(train_loader, val_loader, encoder, decoder, num_epochs, learning_rate, srcLang, tgtLang)
 
-batch_size = 64
+batch_size = 96
 train_dataset = VocabDataset(train_input_index,train_output_index, max_src_len_dataloader, max_tgt_len_dataloader)
 train_loader = torch.utils.data.DataLoader(dataset=train_dataset,
                                            batch_size=batch_size,
@@ -157,17 +158,30 @@ def trainIters(train_loader, val_loader, encoder, decoder, num_epochs, learning_
         else:
             return 1.0/np.sqrt(args['encoder_embed_dim'])* min(1.0/np.sqrt(step), step*warmup_steps**(-1.5))
     
+#    def lr_foo(step,warmup_steps = 4000):
+#        return 1.0/np.sqrt(args['encoder_embed_dim'])* min(1.0/np.sqrt(step), step*warmup_steps**(-1.5))
 #     def lr_foo(step,warmup_steps = 4000):
 #         if step < 1000:
 #             return 0.001/(step+1)
 #         else:
 #             return min(1.0/np.sqrt(step), step*warmup_steps**(-1.5))
-    
+    #lr_decay = False    
     if lr_decay:
         lambda_T = lambda step: lr_foo(step)   
         scheduler_encoder = LambdaLR(encoder_optimizer, lr_lambda=lambda_T)
         scheduler_decoder = LambdaLR(decoder_optimizer, lr_lambda=lambda_T)
+        
     
+    check_point_state = {
+                'epoch': 0,
+                'encoder_state_dict': encoder.state_dict(),
+                'encoder_optimizer_state_dict': encoder_optimizer.state_dict(),
+                'decoder_state_dict': decoder.state_dict(),
+                'decoder_optimizer_state_dict': decoder_optimizer.state_dict()
+                }
+    torch.save(check_point_state, '{}epoch_{}.pth'.format(model_path, 0))
+    
+    max_val_bleu = 4
     for epoch in range(num_epochs): 
         n_iter = -1
         start_time = time.time()
@@ -199,7 +213,20 @@ def trainIters(train_loader, val_loader, encoder, decoder, num_epochs, learning_
                 #print('epoch: [{}/{}], step: [{}/{}], train_loss:{}, val_bleu_sacre: {}, val_bleu_nltk: {}, val_loss: {}'.format(
                 #    epoch, num_epochs, n_iter, len(train_loader), loss, val_bleu_sacre[0], val_bleu_nltk, val_loss))
               
-        evaluate_batch(val_loader, encoder, decoder, tgt_max_length, tgtLang.index2word, srcLang.index2word)
+        val_bleu_sacre = evaluate_batch(val_loader, encoder, decoder, tgt_max_length, tgtLang.index2word, srcLang.index2word)
+        
+        if max_val_bleu < val_bleu_sacre.score:
+            max_val_bleu = val_bleu_sacre.score
+            ### TODO save best model
+            check_point_state = {
+                'epoch': epoch,
+                'encoder_state_dict': encoder.state_dict(),
+                'encoder_optimizer_state_dict': encoder_optimizer.state_dict(),
+                'decoder_state_dict': decoder.state_dict(),
+                'decoder_optimizer_state_dict': decoder_optimizer.state_dict()
+                }
+            torch.save(check_point_state, '{}epoch_{}.pth'.format(model_path, epoch))
+            
         #print('epoch: [{}/{}] (Running time {:.3f} min), val_bleu_sacre: {}, val_bleu_nltk: {}, val_loss: {}'.format(epoch, num_epochs, (time.time()-start_time)/60, val_bleu_sacre, val_bleu_nltk, val_loss))
         #val_bleu_sacre_beam, _, _ = evaluate_beam_batch(beam_size, val_loader, encoder, decoder, criterion, tgt_max_length, tgtLang.index2word)
         #print('epoch: [{}/{}] (Running time {:.3f} min), val_bleu_sacre_beam: {}'.format(epoch, num_epochs, (time.time()-start_time)/60, val_bleu_sacre_beam))
@@ -269,8 +296,24 @@ def evaluate_batch(loader, encoder, decoder, tgt_max_length, tgt_idx2words, src_
     print('*****************************')
     print('BLUE: ', sacre_bleu_score)
     print('*****************************')
+    
+    return sacre_bleu_score
 
 
+if not os.path.exists(model_path):
+    os.makedirs(model_path)
+
+with open(model_path+'model_params.pkl', 'wb') as f:
+    model_hyparams = args
+    model_hyparams['address_book'] = address_book
+    model_hyparams['src_vocab_size'] = src_vocab_size 
+    model_hyparams['tgt_vocab_size'] = tgt_vocab_size 
+    model_hyparams['tgt_max_length'] = tgt_max_length 
+    model_hyparams['max_src_len_dataloader'] = max_src_len_dataloader
+    model_hyparams['max_tgt_len_dataloader'] = max_tgt_len_dataloader 
+    model_hyparams['model_path'] = model_path
+    pickle.dump(model_hyparams, f)
+    print(model_hyparams)
 
 num_epochs, learning_rate = 200, 1
 trainIters(train_loader, val_loader, encoder, decoder, num_epochs, learning_rate, srcLang, tgtLang)
