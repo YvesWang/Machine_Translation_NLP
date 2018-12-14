@@ -15,6 +15,7 @@ from config import device, PAD_token, SOS_token, EOS_token, UNK_token, embedding
 import random
 import pickle 
 from SelfAtten_RNN_config import args
+from torch.optim.lr_scheduler import LambdaLR
 
 ####################Define Global Variable#########################
 
@@ -116,8 +117,8 @@ def train(input_tensor, input_lengths, target_tensor, target_lengths,
 def trainIters(train_loader, val_loader, encoder, decoder, num_epochs, 
                learning_rate, teacher_forcing_ratio, srcLang, tgtLang, model_save_info, tgt_max_len, beam_size):
 
-    encoder_optimizer = optim.Adam(encoder.parameters(), lr=learning_rate)
-    decoder_optimizer = optim.Adam(decoder.parameters(), lr=learning_rate)
+    encoder_optimizer = optim.Adam(encoder.parameters(), lr=learning_rate, betas=(0.9, 0.98), eps=1e-09)
+    decoder_optimizer = optim.Adam(decoder.parameters(), lr=learning_rate, betas=(0.9, 0.98), eps=1e-09)
 
     if model_save_info['model_path_for_resume'] is not None:
         check_point_state = torch.load(model_save_info['model_path_for_resume'])
@@ -125,15 +126,31 @@ def trainIters(train_loader, val_loader, encoder, decoder, num_epochs,
         encoder_optimizer.load_state_dict(check_point_state['encoder_optimizer_state_dict'])
         decoder.load_state_dict(check_point_state['decoder_state_dict'])
         decoder_optimizer.load_state_dict(check_point_state['decoder_optimizer_state_dict'])
-
+    
+    lr_decay = True
+    def lr_foo(step,warmup_steps = 4000):
+        if step < 500:
+            return 0.001/(step+1)
+        else:
+            return 1.0/np.sqrt(args['encoder_embed_dim'])* min(1.0/np.sqrt(step), step*warmup_steps**(-1.5))
+    
     criterion = nn.NLLLoss() #nn.NLLLoss(ignore_index=PAD_token)
     max_val_bleu = 0
-
+    
+    if lr_decay:
+        lambda_T = lambda step: lr_foo(step)
+        scheduler_encoder = LambdaLR(encoder_optimizer, lr_lambda=lambda_T)
+        scheduler_decoder = LambdaLR(decoder_optimizer, lr_lambda=lambda_T)
+    
     for epoch in range(num_epochs): 
         n_iter = -1
         start_time = time.time()
         for input_tensor, input_lengths, target_tensor, target_lengths in train_loader:
             n_iter += 1
+            
+            if lr_decay:
+                scheduler_encoder.step()
+                scheduler_decoder.step()
             #print('start_step: ', n_iter)
             loss = train(input_tensor, input_lengths, target_tensor, target_lengths, 
                          encoder, decoder, encoder_optimizer, decoder_optimizer, 
@@ -286,32 +303,32 @@ def start_train(transtype, paras):
     
 
 if __name__ == "__main__":
-    transtype = ('vi', 'en')
+    transtype = ('zh', 'en')
     paras = dict( 
-        src_max_vocab_size = 26109, # 47127, #26109,
-        tgt_max_vocab_size = 24418, #31553, #24418,
+        src_max_vocab_size = 47127, # 47127, #26109,
+        tgt_max_vocab_size = 31553, #31553, #24418,
         tgt_max_len = 128,
-        max_src_len_dataloader =72, #67, #72, 
-        max_tgt_len_dataloader = 71, #72, #71, 
+        max_src_len_dataloader = 67, #67, #72, 
+        max_tgt_len_dataloader = 72, #72, #71, 
 
-        emb_size = 256,
-        hidden_size = 256,
-        num_layers = 2,
-        num_direction = 2,
+        emb_size = 512,
+        hidden_size = 512,
+        num_layers = 1,
+        num_direction = 1,
         deal_bi = 'linear', #{'linear', 'sum'}
         rnn_type = 'LSTM', # LSTM
         attention_type = 'dot_prod', #'dot_prod', general, concat
         teacher_forcing_ratio = 1,
 
-        learning_rate = 1e-4,
+        learning_rate = 1,
         num_epochs = 50,
-        batch_size = 100, 
+        batch_size = 128, 
         beam_size = 1,
         dropout_rate = 0.1,
 
         model_save_info = dict(
-            model_path = 'nmt_models/vi-en-selfattention-lr4/',
-            epochs_per_save_model = 1,
+            model_path = 'nmt_models/zh-en-selfattention512-lrdecay_encoderlayer21_random_dr0/',
+            epochs_per_save_model = 2,
             model_path_for_resume = None #'nmt_models/epoch_0.pth'
             )
         )

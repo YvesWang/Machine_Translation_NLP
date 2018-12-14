@@ -4,6 +4,7 @@ import torch.nn.functional as F
 from MultiheadAttention import MultiheadAttention
 import math
 from PositionalEmbedding import SinusoidalPositionalEmbedding
+from config import device
 
 class Encoder(nn.Module):
     def __init__(self, args, num_layers, embedding_weight = None, vocab_size = None, use_position_emb = False):
@@ -75,9 +76,15 @@ class Encoder(nn.Module):
         hidden, cell = None,None
         if self.compress_hidden_type == 'sum':
             hidden = torch.sum(x, dim=1).unsqueeze(1).expand(batch_size, self.num_layers, hidden_size)
-            cell = torch.sum(x, dim=1).unsqueeze(1).expand(batch_size, self.num_layers, hidden_size)
-        
-        return x, hidden.transpose(0,1).contiguous(), cell.transpose(0,1).contiguous()
+            cell = torch.sum(x, dim=1).unsqueeze(1).expand(batch_size, self.num_layers, hidden_size) 
+            return x, hidden.transpose(0,1).contiguous(), cell.transpose(0,1).contiguous()
+        elif self.compress_hidden_type == 'random':
+            hidden = torch.randn(self.num_layers, batch_size, hidden_size, device=device)
+            cell = torch.randn(self.num_layers, batch_size, hidden_size, device=device)
+            return x, hidden, cell
+        else:
+            print('compress hidden type Error')
+            return None,None,None
 
         #return {
         #    'encoder_out': x,  # B x T x C

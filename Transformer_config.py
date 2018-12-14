@@ -17,12 +17,12 @@ args = dict(
     output_normalize = True,
     encoder_hidden_dim = 1024,           #   hidden dimension between to fc layers
     decoder_hidden_dim = 1024,           #   hidden dimension between to fc layers
-    encoder_layers = 2,
-    decoder_layers = 2,
+    encoder_layers = 6,
+    decoder_layers = 6,
     decoder_need_atten_weight = False
     )
 
-model_path = '/scratch/tw1682/nmt_models/zh-en-512-2-dropout3/'
+model_path = 'trans_models/zh-en-512-6-dropout3/'
 
 
 
