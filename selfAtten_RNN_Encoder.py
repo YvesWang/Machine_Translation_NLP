@@ -127,20 +127,22 @@ class TransformerEncoderLayer(nn.Module):
         x = self.layer_norm(0, x, before=True)
 
         x, _ = self.self_attn(query=x, key=x, value=x, src_true_len=src_lengths, need_weights=False)
+        x = self.layer_norm(0, x, after=True)
         x = self.encoder_dropout1(x)
         
         assert x.size() == residual.size()
         x = residual + x
-        x = self.layer_norm(0, x, after=True)
+        #x = self.layer_norm(0, x, after=True)
 
         residual = x
         x = self.layer_norm(1, x, before=True)
         x = F.relu(self.fc1(x))
         x = self.encoder_dropout2(x)
         x = self.fc2(x)
-        x = self.encoder_dropout3(x)
+        #x = self.encoder_dropout3(x)
         x = residual + x
         x = self.layer_norm(1, x, after=True)
+        x = self.encoder_dropout3(x)
         return x
 
 

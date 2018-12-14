@@ -72,11 +72,11 @@ def evaluate_batch(loader, encoder, decoder, criterion, tgt_max_length, tgt_idx2
     sacre_bleu_score = sacrebleu.corpus_bleu(tgt_pred_sents_sacre, [tgt_sents_sacre], smooth='exp', smooth_floor=0.0, force=False, lowercase=False,
         tokenize='none', use_effective_order=True)
     loss = np.mean(loss_all)
-    if True:
-        random_sample = np.random.randint(len(tgt_pred_sents_sacre))
-        print('src:', src_sents[random_sample])
-        print('Ref: ', tgt_sents_sacre[random_sample])
-        print('pred: ', tgt_pred_sents_sacre[random_sample])
+#    if True:
+#        random_sample = np.random.randint(len(tgt_pred_sents_sacre))
+#        print('src:', src_sents[random_sample])
+#        print('Ref: ', tgt_sents_sacre[random_sample])
+#        print('pred: ', tgt_pred_sents_sacre[random_sample])
     return sacre_bleu_score, None, loss
 
 def evaluate_beam_batch(beam_size, loader, encoder, decoder, criterion, tgt_max_length, tgt_idx2words):
@@ -163,10 +163,10 @@ def evaluate_beam_batch(beam_size, loader, encoder, decoder, criterion, tgt_max_
     #nltk_bleu_score = bleu_score.corpus_bleu(tgt_sents_nltk, tgt_pred_sents_nltk)
     sacre_bleu_score = sacrebleu.corpus_bleu(tgt_pred_sents_sacre, [tgt_sents_sacre], smooth='exp', smooth_floor=0.0, force=False, lowercase=False,
         tokenize='none', use_effective_order=True)
-    if True:
-        random_sample = 300 #np.random.randint(len(tgt_pred_sents_sacre))
-        print('Ref: ', tgt_sents_sacre[random_sample])
-        print('pred: ', tgt_pred_sents_sacre[random_sample])
+ #   if True:
+ #       random_sample = 300 #np.random.randint(len(tgt_pred_sents_sacre))
+ #       print('Ref: ', tgt_sents_sacre[random_sample])
+ #       print('pred: ', tgt_pred_sents_sacre[random_sample])
     return sacre_bleu_score, None, None
 
 

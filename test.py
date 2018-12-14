@@ -81,8 +81,8 @@ val_loader = torch.utils.data.DataLoader(dataset=val_dataset,
 # encoder = Encoder(args, embedding_src_weight)
 # decoder = Decoder(args, tgtLang.vocab_size, embedding_tgt_weight)
 
-encoder = Encoder(args, vocab_size = srcLang.vocab_size, use_position_emb = True)
-decoder = Decoder(args, tgtLang.vocab_size, use_position_emb = True)
+encoder = Encoder(args, vocab_size = srcLang.vocab_size, use_position_emb = False)
+decoder = Decoder(args, tgtLang.vocab_size, use_position_emb = False)
 
 encoder, decoder = encoder.to(device), decoder.to(device)
 print('Encoder:')
@@ -105,7 +105,7 @@ def train(input_tensor, input_lengths, target_tensor, target_lengths,
     #print(target_tensor.size())
     target_tensor_in = torch.cat((torch.ones(batch_size,1).type_as(target_tensor)*SOS_token, target_tensor[:,:-1]),1)
     
-    encoder_outputs, src_lengths = encoder(input_tensor, input_lengths)
+    encoder_outputs, src_lengths, _ = encoder(input_tensor, input_lengths)
     #print(src_lengths.size(),target_lengths.size())
     decoder_outputs, _ = decoder(target_tensor_in, src_lengths, target_lengths, encoder_outputs)  # bsz tgt vocab
     #print(decoder_outputs.view(batch_size*tgt_max_len_batch, -1).size(), target_tensor.view(batch_size*tgt_max_len_batch).size())
@@ -233,16 +233,16 @@ def trainIters(train_loader, val_loader, encoder, decoder, num_epochs, learning_
 
     return None
 
-#def evaluation(val_loader, encoder, decoder, criterion, tgt_max_length, tgtLang.index2word, srcLang.index2word):
-import sacrebleu
-def fun_index2token(index_list, idx2words):
-    token_list = []
-    for index in index_list:
-        if index == EOS_token:
-            break
-        else:
-            token_list.append(idx2words[index])
-    return token_list
+# #def evaluation(val_loader, encoder, decoder, criterion, tgt_max_length, tgtLang.index2word, srcLang.index2word):
+# import sacrebleu
+# def fun_index2token(index_list, idx2words):
+#     token_list = []
+#     for index in index_list:
+#         if index == EOS_token:
+#             break
+#         else:
+#             token_list.append(idx2words[index])
+#     return token_list
 
 #def evaluation(val_loader, encoder, decoder, criterion, tgt_max_length, tgtLang.index2word, srcLang.index2word):
 import sacrebleu

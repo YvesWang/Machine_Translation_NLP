@@ -127,7 +127,7 @@ def trainIters(train_loader, val_loader, encoder, decoder, num_epochs,
         decoder.load_state_dict(check_point_state['decoder_state_dict'])
         decoder_optimizer.load_state_dict(check_point_state['decoder_optimizer_state_dict'])
     
-    lr_decay = True
+    lr_decay = False
     def lr_foo(step,warmup_steps = 4000):
         if step < 500:
             return 0.001/(step+1)
@@ -303,31 +303,31 @@ def start_train(transtype, paras):
     
 
 if __name__ == "__main__":
-    transtype = ('zh', 'en')
+    transtype = ('vi', 'en')
     paras = dict( 
-        src_max_vocab_size = 47127, # 47127, #26109,
-        tgt_max_vocab_size = 31553, #31553, #24418,
+        src_max_vocab_size = 26109, # 47127, #26109,
+        tgt_max_vocab_size = 24418, #31553, #24418,
         tgt_max_len = 128,
-        max_src_len_dataloader = 67, #67, #72, 
-        max_tgt_len_dataloader = 72, #72, #71, 
+        max_src_len_dataloader = 72, #67, #72, 
+        max_tgt_len_dataloader = 71, #72, #71, 
 
-        emb_size = 512,
-        hidden_size = 512,
-        num_layers = 1,
+        emb_size = 300,
+        hidden_size = 300,
+        num_layers = 2,
         num_direction = 1,
         deal_bi = 'linear', #{'linear', 'sum'}
         rnn_type = 'LSTM', # LSTM
-        attention_type = 'dot_prod', #'dot_prod', general, concat
+        attention_type = 'concat', #'dot_prod', general, concat
         teacher_forcing_ratio = 1,
 
-        learning_rate = 1,
+        learning_rate = 3e-4,
         num_epochs = 50,
         batch_size = 128, 
         beam_size = 1,
         dropout_rate = 0.1,
 
         model_save_info = dict(
-            model_path = 'nmt_models/zh-en-selfattention512-lrdecay_encoderlayer21_random_dr0/',
+            model_path = 'nmt_models/vi-en-selfattention300-lrdecay_encoderlayer21_random_dr1_lige/',
             epochs_per_save_model = 2,
             model_path_for_resume = None #'nmt_models/epoch_0.pth'
             )

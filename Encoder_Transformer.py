@@ -57,16 +57,19 @@ class Encoder(nn.Module):
         x = self.embed_scale * self.embedding(src_tokens)
         if self.embed_positions is not None:
             x += self.embed_positions(src_lengths)
+            
         x = self.dropout(x)
         
         # encoder layers
+        attn_states = []
         for layer in self.layers:
-            x = layer(x, src_lengths)
+            x,atten = layer(x, src_lengths)
+            attn_states.append(atten)
 
         if self.normalize:
             x = self.layer_norm(x)
 
-        return x, src_lengths
+        return x, src_lengths, attn_states
 
         #return {
         #    'encoder_out': x,  # B x T x C
@@ -88,6 +91,7 @@ class TransformerEncoderLayer(nn.Module):
             args['encoder_attention_heads'],
             dropout=args['attention_dropout']
         )
+        self.need_attn = True
         self.dropout = args['dropout']
         self.normalize_before = args['encoder_normalize_before']
         self.fc1 = Linear(self.embed_dim, args['encoder_hidden_dim'])
@@ -108,7 +112,7 @@ class TransformerEncoderLayer(nn.Module):
         residual = x
         x = self.layer_norm(0, x, before=True)
 
-        x, _ = self.self_attn(query=x, key=x, value=x, src_true_len=src_lengths, need_weights=False)
+        x, atten = self.self_attn(query=x, key=x, value=x, src_true_len=src_lengths, need_weights=self.need_attn)
         x = self.encoder_dropout1(x)
         
         assert x.size() == residual.size()
@@ -123,7 +127,7 @@ class TransformerEncoderLayer(nn.Module):
         x = self.encoder_dropout3(x)
         x = residual + x
         x = self.layer_norm(1, x, after=True)
-        return x
+        return x, atten
 
 
     def layer_norm(self, i, x, before=False, after=False):
