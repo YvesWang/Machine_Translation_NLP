@@ -1,3 +1,6 @@
+#################################################################################################################
+#################################################################################################################
+
 import torch.nn as nn
 import torch
 import torch.nn.functional as F
@@ -18,12 +21,6 @@ class EncoderRNN(nn.Module):
         self.dropout = nn.Dropout(dropout_rate)
         self.deal_bi = deal_bi
         self.rnn_type = rnn_type
-#         if num_direction == 1:
-#             self.gru = nn.GRU(embed_size, hidden_size, num_layers, batch_first=True)
-#         elif num_direction == 2:
-#             self.gru = nn.GRU(embed_size, hidden_size, num_layers, batch_first=True, bidirectional=True)
-#             if deal_bi == 'linear':
-#                 self.linear_compress = nn.Linear(2*self.hidden_size, self.hidden_size, bias=False)
         if num_direction == 1:
             if rnn_type == 'GRU':
                 self.gru = nn.GRU(embed_size, hidden_size, num_layers, batch_first=True, dropout = dropout_rate)
@@ -46,6 +43,15 @@ class EncoderRNN(nn.Module):
             print('number of direction out of bound')
 
     def forward(self, x, hidden, lengths, cell = None):
+        """
+        Args:
+            x (Tensor): Input bz, src_len , hidden_size
+            hidden, cell (Tensor): input to the layer of shape `num_layers, bz, hidden_size`
+            lengths (Tensor): input to the layer of shape `bz`
+        Returns:
+            rnn_out (Tensor): bz, src_len, hidden_size 
+            hidden, cell (Tensor): num_layers, bz, hidden_size
+        """
         embed = self.embedding(x) #(bz, src_len, emb_size)
         embed = self.dropout(embed) 
         batch_size = embed.size(0)

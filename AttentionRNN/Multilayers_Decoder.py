@@ -63,6 +63,16 @@ class DecoderAtten(nn.Module):
         self.logsoftmax = nn.LogSoftmax(dim=1)
 
     def forward(self, tgt_input, hidden, true_len, encoder_outputs, cell = None):
+        """
+        Args:
+            tgt_input (Tensor): Input bz, src_len, hidden_size 
+            hidden, cell (Tensor): input to the layer of shape `num_layers, bz, hidden_size`
+            lengths (Tensor): input to the layer of shape `bz`
+        Returns:
+            rnn_out (Tensor): bz, src_len, hidden_size 
+            hidden, cell (Tensor): num_layers, bz, hidden_size
+            atten_weight bz, src_len, tgt_len
+        """
         output = self.embedding(tgt_input)
         output = self.dropout(output)
         #print(output.size())
@@ -80,9 +90,6 @@ class DecoderAtten(nn.Module):
         output = self.logsoftmax(logits)
         return output, hidden, atten_weight, cell
     
-#    def initHidden(self, encoder_hidden):
-#        batch_size = encoder_hidden.size(1)
-#        return encoder_hidden.expand(self.num_layers, batch_size, self.hidden_size).contiguous()
 
 
 class AttentionLayer(nn.Module):
