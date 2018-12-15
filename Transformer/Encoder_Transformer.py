@@ -19,21 +19,12 @@ class Encoder(nn.Module):
             self.embedding = nn.Embedding.from_pretrained(embedding_weight, freeze = False)
         else:
             self.embedding = nn.Embedding(vocab_size,args['encoder_embed_dim'])
-        ############# we need an embedding position matrix ##################
-        ############# we need an embed scale matrix #########################
         if use_position_emb:
             self.embed_positions = SinusoidalPositionalEmbedding(args['encoder_embed_dim'])
         else:
             self.embed_positions = None
-        #embed_dim = embedding_weight.shape
-        #self.max_source_positions = args.max_source_positions
-        self.embed_scale = math.sqrt(args['encoder_embed_dim'])
-        # self.embed_positions = PositionalEmbedding(
-        #     args.max_source_positions, embed_dim, self.padding_idx,
-        #     left_pad=left_pad,
-        #     learned=args.encoder_learned_pos,
-        # ) if not args.no_token_positional_embeddings else None
 
+        self.embed_scale = math.sqrt(args['encoder_embed_dim'])
         self.layers = nn.ModuleList([])
         self.layers.extend([
             TransformerEncoderLayer(args)
@@ -77,10 +68,6 @@ class Encoder(nn.Module):
 
         return x, src_lengths, attn_states
 
-        #return {
-        #    'encoder_out': x,  # B x T x C
-        #    'encoder_padding_mask': src_lengths,  # B x T
-        #}
 
 class TransformerEncoderLayer(nn.Module):
     """Encoder layer block.
