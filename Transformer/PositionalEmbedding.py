@@ -1,3 +1,9 @@
+#################################################################################################################
+# Adapted from fairseq:                                                                                         #
+# https://fairseq.readthedocs.io/en/latest/_modules/fairseq/models/transformer.html                             #
+#                                                                                                               #
+#################################################################################################################
+
 import math
 import torch
 import torch.nn as nn
